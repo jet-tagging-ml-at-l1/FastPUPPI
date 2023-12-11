@@ -124,7 +124,8 @@ process.extraPFStuff.add(process.l1tPFTracksFromL1Tracks)
 
 process.l1pfjetTable = cms.EDProducer("L1PFJetTableProducer",
     gen = cms.InputTag("ak4GenJetsNoNu"),
-    commonSel = cms.string("pt > 5 && abs(eta) < 5.0"),
+    # commonSel = cms.string("pt > 5 && abs(eta) < 5.0"),
+    commonSel = cms.string("pt > 15 && abs(eta) < 5.0"),
     drMax = cms.double(0.2),
     minRecoPtOverGenPt = cms.double(0.1),
     jets = cms.PSet(
@@ -279,10 +280,14 @@ def addJetConstituents(N):
         for var in "pt", "eta", "phi", "mass", "pdgId":
             setattr(process.l1pfjetTable.moreVariables, "dau%d_%s" % (i,var), cms.string("? numberOfDaughters() > %d ? daughter(%d).%s : -1"  % (i,i,var)))
         setattr(process.l1pfjetTable.moreVariables, "dau%d_%s" % (i,"vz"), cms.string("? numberOfDaughters() > %d ? daughter(%d).%s : -1"  % (i,i,"vertex.Z")))
+        setattr(process.l1pfjetTable.moreVariables, "dau%d_%s" % (i,"z0"), cms.string("? numberOfDaughters() > %d ? daughter(%d).%s : -1"  % (i,i,"z0")))
+        setattr(process.l1pfjetTable.moreVariables, "dau%d_%s" % (i,"dxy"), cms.string("? numberOfDaughters() > %d ? daughter(%d).%s : -1"  % (i,i,"dxy")))
+        setattr(process.l1pfjetTable.moreVariables, "dau%d_%s" % (i,"puppiWeight"), cms.string("? numberOfDaughters() > %d ? daughter(%d).%s : -1"  % (i,i,"puppiWeight")))
 
 def addGenJetFlavourTable():
     process.load("PhysicsTools.JetMCAlgos.AK4PFJetsMCFlavourInfos_cfi")
     process.load("PhysicsTools.JetMCAlgos.HadronAndPartonSelector_cfi")
+    process.selectedHadronsAndPartons.partonMode = cms.string("Pythia8")
     process.genFlavourInfo = process.ak4JetFlavourInfos.clone(jets = "ak4GenJetsNoNu")
     process.genJetFlavourTable = cms.EDProducer("GenJetFlavourTableProducer",
         name = cms.string("GenJets"),
@@ -623,26 +628,6 @@ def addEDMOutput():
     process.end = cms.EndPath(process.out)
     process.maxEvents.input = 10
 
-if False:
-    #process.source.fileNames  = [ '/store/cmst3/group/l1tr/gpetrucc/11_1_0/NewInputs110X/110121.done/TTbar_PU200/inputs110X_%d.root' % i for i in (1,)] #3,7,8,9) ]
-    process.source.fileNames  = [ '/store/cmst3/group/l1tr/gpetrucc/12_3_X/NewInputs110X/220322/TTbar_PU200/inputs110X_%d.root' % i for i in (1,)] 
-    #process.source.fileNames  = [ '/store/cmst3/group/l1tr/gpetrucc/11_1_0/NewInputs110X/110121.done/DYToLL_PU200/inputs110X_%d.root' % i for i in (1,)] #3,7,8,9) ]
-    #goMT(4)
-    #oldInputs_11_1_6()
-    oldInputs_12_3_X()
-    addAllLeps()
-    addAllJets()
-
-    if False:
-        #process.source.eventsToProcess = cms.untracked.VEventRange("1:1376:240626","1:1376:240627","1:1376:240628","1:1376:240642","1:1376:240638")
-        process.source.eventsToProcess = cms.untracked.VEventRange("1:1376:240656", "1:1376:240742", "1:1108:193756", "1:1108:193762", "1:1108:193772")
-        #process.source.eventsToProcess = cms.untracked.VEventRange()
-        #process.maxEvents.input = 10
-        addEDMOutput()
-        R='HGCal'
-        getattr(process, 'l1tLayer1'+R).trkPtCut = 10
-        getattr(process, 'l1tLayer1'+R).pfAlgoParameters.debug = True
-
 def saveCands():
     process.l1pfcandTable = cms.EDProducer("L1PFCandTableProducer",
                                            commonSel = cms.string("pt > 0.0 && abs(eta) < 10.0"),
@@ -670,3 +655,26 @@ def saveGenCands():
                                            ),
                                       )
     process.p += process.gencandTable
+
+if True:
+    process.source.fileNames  = [ '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1-1.root'] 
+    #goMT(4)
+    
+    addAllLeps()
+    # addAllJets()
+    addSeededConeJets()
+    addJetConstituents(30)
+    addGenJetFlavourTable()
+    saveCands() # not needed for jet studies per se, but saves all L1 PF & PUPPI candidates
+
+
+    if False:
+        #process.source.eventsToProcess = cms.untracked.VEventRange("1:1376:240626","1:1376:240627","1:1376:240628","1:1376:240642","1:1376:240638")
+        process.source.eventsToProcess = cms.untracked.VEventRange("1:1376:240656", "1:1376:240742", "1:1108:193756", "1:1108:193762", "1:1108:193772")
+        #process.source.eventsToProcess = cms.untracked.VEventRange()
+        #process.maxEvents.input = 10
+        addEDMOutput()
+        R='HGCal'
+        getattr(process, 'l1tLayer1'+R).trkPtCut = 10
+        getattr(process, 'l1tLayer1'+R).pfAlgoParameters.debug = True
+

@@ -149,7 +149,7 @@ L1PFJetTableProducer::produce(edm::StreamID id, edm::Event& iEvent, const edm::E
             for (unsigned int i = 0; i < njets; ++i) {
                 if (matched[i] != nullptr) {
                     vals_pt[i] = matched[i]->pt();
-                    vals_eta[i] = deltaR(*selected[i], *matched[i]);;
+                    vals_eta[i] = deltaR(*selected[i], *matched[i]);
                 } else {
                     vals_pt[i] = 0;
                     vals_eta[i] = 99.9;
@@ -161,10 +161,12 @@ L1PFJetTableProducer::produce(edm::StreamID id, edm::Event& iEvent, const edm::E
 
         // fill extra vars
         for (const auto & evar : extraVars_) {
-            for (unsigned int i = 0; i < njets; ++i) {
-                vals_pt[i] = evar.func(*selected[i]);
+            if (src.id() != gens.id()) {
+                for (unsigned int i = 0; i < njets; ++i) {
+                    vals_pt[i] = evar.func(*selected[i]);
+                }
+                out->addColumn<float>(evar.name, vals_pt, evar.expr);
             }
-            out->addColumn<float>(evar.name, vals_pt, evar.expr);
         }
         
         // save to the event branches
