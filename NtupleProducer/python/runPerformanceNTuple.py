@@ -120,6 +120,18 @@ process.ntuple = cms.EDAnalyzer("ResponseNTuplizer",
     copyVecUInts = cms.VInputTag(),
 )
 
+# create new jet tupler
+process.jetntuple = cms.EDAnalyzer("JetNTuplizer",
+    genJets = cms.InputTag("ak4GenJetsNoNu"),
+    genParticles = cms.InputTag("genParticles"),
+    # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiEmulator"),
+    # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiCorrectedEmulator"),
+    scPuppiJets = cms.InputTag("l1tSCPFL1PuppiExtendedCorrectedEmulator"),
+    genJetsFlavour = cms.InputTag("genFlavourInfo"),
+    vtx = cms.InputTag("l1tVertexFinderEmulator","L1VerticesEmulation"),
+    bjetIDs = cms.InputTag("l1tBJetProducerPuppiCorrectedEmulator", "L1PFBJets"),
+)
+
 process.extraPFStuff.add(process.l1tPFTracksFromL1Tracks)
 
 process.l1pfjetTable = cms.EDProducer("L1PFJetTableProducer",
@@ -150,15 +162,21 @@ monitorPerf("L1TK",   "l1tLayer1:TK")
 monitorPerf("L1PF",    "l1tLayer1:PF")
 monitorPerf("L1Puppi", "l1tLayer1:Puppi")
 
+# turn off all other nano-like outputs
+
 # to check available tags:
 #process.content = cms.EDAnalyzer("EventContentAnalyzer")
 process.p = cms.Path(
-        process.ntuple + #process.content +
-        process.l1pfjetTable + 
-        process.l1pfmetTable + process.l1pfmetCentralTable
+        # process.ntuple + #process.content +
+        # process.jetntuple #process.content +
+        # process.l1pfjetTable + 
+        # process.l1pfmetTable + process.l1pfmetCentralTable
         )
+process.endTuple = cms.EndPath(process.jetntuple)
 process.p.associate(process.extraPFStuff)
-process.TFileService = cms.Service("TFileService", fileName = cms.string("perfTuple.root"))
+process.p.associate(process.L1TPFJetsExtendedTask)
+process.p.associate(process.L1TBJetsTask)
+process.TFileService = cms.Service("TFileService", fileName = cms.string("jetTuple.root"))
 
 # for full debug:
 #process.out = cms.OutputModule("PoolOutputModule",
@@ -174,7 +192,7 @@ process.outnano = cms.OutputModule("NanoAODOutputModule",
     compressionLevel = cms.untracked.int32(4),
     compressionAlgorithm = cms.untracked.string("ZLIB"),
 )
-process.end = cms.EndPath(process.outnano)
+# process.end = cms.EndPath(process.outnano)
 
 # Below for more debugging
 if True:
@@ -657,7 +675,30 @@ def saveGenCands():
     process.p += process.gencandTable
 
 if True:
-    process.source.fileNames  = [ '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1-1.root'] 
+    # process.source.fileNames  = [ '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1-1.root'] 
+    process.source.fileNames  = [
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_2.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_3.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_4.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_5.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_6.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_7.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_8.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_9.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_10.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_11.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_12.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_13.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_14.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_15.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_16.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_17.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_18.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_19.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_20.root'
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_21.root'
+    ] 
     #goMT(4)
     
     addAllLeps()
@@ -678,3 +719,4 @@ if True:
         getattr(process, 'l1tLayer1'+R).trkPtCut = 10
         getattr(process, 'l1tLayer1'+R).pfAlgoParameters.debug = True
 
+# open("debugDump.py", "w").write(process.dumpPython())
