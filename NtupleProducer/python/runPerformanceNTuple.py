@@ -266,6 +266,14 @@ def addSeededConeJets():
     process.l1pfjetTable.jets.scPuppi = cms.InputTag('l1tSCPFL1PuppiEmulator')
     process.l1pfjetTable.jets.scPuppiCorr = cms.InputTag('l1tSCPFL1PuppiCorrectedEmulator')
     process.l1pfmetTable.mets.scPuppiCorrMHT = cms.InputTag("l1tSCPFL1PuppiCorrectedEmulatorMHT")
+    process.extraPFStuff.add(process.L1TPFJetsExtendedTask)
+    process.l1pfjetTable.jets.scPuppiExtended = cms.InputTag('l1tSCPFL1PuppiExtendedEmulator')
+    process.l1pfjetTable.jets.scPuppiExtendedCorr = cms.InputTag('l1tSCPFL1PuppiExtendedCorrectedEmulator')
+
+def addBtagging():
+    process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
+    process.extraPFStuff.add(process.L1TBJetsTask)
+    #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
 
 def addPhase1Jets():
     process.extraPFStuff.add(process.l1tPhase1JetProducer9x9, process.l1tPhase1JetCalibrator9x9, process.l1tPhase1JetSumsProducer9x9)
@@ -704,6 +712,7 @@ if True:
     addAllLeps()
     # addAllJets()
     addSeededConeJets()
+    addBtagging()  
     addJetConstituents(30)
     addGenJetFlavourTable()
     saveCands() # not needed for jet studies per se, but saves all L1 PF & PUPPI candidates
