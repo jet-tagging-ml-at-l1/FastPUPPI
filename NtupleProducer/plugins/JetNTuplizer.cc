@@ -57,63 +57,69 @@
 #include "DataFormats/L1TParticleFlow/interface/PFCandidate.h"
 #include "L1Trigger/Phase2L1ParticleFlow/interface/BJetId.h"
 #include "DataFormats/L1Trigger/interface/VertexWord.h"
+#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 
-bool useoffsets = true;
-const float& catchInfs(const float& in,const float& replace_value){
-        if(in==in){
-            if(std::isinf(in))
-                return replace_value;
-            else if(in < -1e32 || in > 1e32)
-                return replace_value;
-            return in;
+namespace jettools{
+
+    bool useoffsets = true;
+    const float& catchInfs(const float& in,const float& replace_value){
+            if(in==in){
+                if(std::isinf(in))
+                    return replace_value;
+                else if(in < -1e32 || in > 1e32)
+                    return replace_value;
+                return in;
+            }
+            return replace_value;
+    }
+
+
+    float catchInfsAndBound(const float& in,const float& replace_value,
+            const float& lowerbound, const float& upperbound,const float offset=0){
+        float withoutinfs=catchInfs(in,replace_value);
+        if(withoutinfs+offset<lowerbound) return lowerbound;
+        if(withoutinfs+offset>upperbound) return upperbound;
+        if(useoffsets)
+            withoutinfs+=offset;
+        return withoutinfs;
+    }
+
+
+    double etaRel(const math::XYZVector& dir, const math::XYZVector& track) {
+        double momPar = dir.Dot(track);
+        // double energy = std::sqrt(track.Mag2() + ROOT::Math::Square(reco::ParticleMasses::piPlus));
+        double energy = std::sqrt(track.Mag2() + ROOT::Math::Square(0.13957));
+
+        return 0.5 * std::log((energy + momPar) / (energy - momPar));
+    }
+
+    // Sorters to order object collections in decreasing order of pT
+    template<typename T> 
+    class PatPtSorter {
+    public:
+        bool operator()(const T& i, const T& j) const {
+        return (i.pt() > j.pt());
         }
-        return replace_value;
+    };
+
+    PatPtSorter<l1t::PFCandidate>  l1PFCandidateSorter;
+
+
+    template<typename T> 
+    class PatRefPtSorter {
+    public:
+        bool operator()(const T& i, const T& j) const {
+        return (i->pt() > j->pt());
+        }
+    };
+    PatRefPtSorter<l1t::PFJetRef>    jetRefSorter;
+    PatRefPtSorter<l1t::PFTauRef>    tauRefSorter;
+    PatRefPtSorter<reco::GenJetRef>  genJetRefSorter;
+
 }
 
-
-float catchInfsAndBound(const float& in,const float& replace_value,
-        const float& lowerbound, const float& upperbound,const float offset=0){
-    float withoutinfs=catchInfs(in,replace_value);
-    if(withoutinfs+offset<lowerbound) return lowerbound;
-    if(withoutinfs+offset>upperbound) return upperbound;
-    if(useoffsets)
-        withoutinfs+=offset;
-    return withoutinfs;
-}
-
-
-double etaRel(const math::XYZVector& dir, const math::XYZVector& track) {
-    double momPar = dir.Dot(track);
-    // double energy = std::sqrt(track.Mag2() + ROOT::Math::Square(reco::ParticleMasses::piPlus));
-    double energy = std::sqrt(track.Mag2() + ROOT::Math::Square(0.13957));
-
-    return 0.5 * std::log((energy + momPar) / (energy - momPar));
-}
-
-  // Sorters to order object collections in decreasing order of pT
-  template<typename T> 
-  class PatPtSorter {
-  public:
-    bool operator()(const T& i, const T& j) const {
-      return (i.pt() > j.pt());
-    }
-  };
-
-  PatPtSorter<l1t::PFCandidate>  l1PFCandidateSorter;
-
-
-  template<typename T> 
-  class PatRefPtSorter {
-  public:
-    bool operator()(const T& i, const T& j) const {
-      return (i->pt() > j->pt());
-    }
-  };
-  PatRefPtSorter<l1t::PFJetRef>    jetRefSorter;
-  PatRefPtSorter<l1t::PFTauRef>    tauRefSorter;
-  PatRefPtSorter<reco::GenJetRef>  genJetRefSorter;
-
+using namespace jettools;
 
 class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::one::WatchRuns>  {
     public:
@@ -139,10 +145,12 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
         edm::EDGetTokenT<std::vector<reco::GenJet>> genjets_;
         edm::EDGetTokenT<std::vector<reco::GenParticle>> genparticles_;
         edm::EDGetTokenT<std::vector<l1t::PFJet>> scjets_;
+        edm::EDGetTokenT<std::vector<l1t::PFJet>> scjetsCorr_;
         edm::EDGetTokenT<std::vector<l1t::PFTau>> nntaus_;
         edm::EDGetTokenT<reco::JetFlavourInfoMatchingCollection> genJetsFlavour_;
         edm::EDGetTokenT<std::vector<l1t::VertexWord>> const fVtxEmu_;
         edm::EDGetTokenT<edm::ValueMap<float>> const bjetids_;
+        // const edm::InputTag pileupInfoTag_;
         TTree *tree_;
         uint32_t run_, lumi_; uint64_t event_;
          //   float bZ_;
@@ -156,7 +164,7 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
         float jetPFCandidatePtMin_ = 0.;
 
         static constexpr size_t max_pfcand_ = 16;
-        bool applyJetIDFlag = true;
+        bool applyJetIDFlag = false;
         /// thresholds for matching
         float dRCone        = 0.2;
         // float dRMatching    = 0.4;
@@ -205,12 +213,15 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
 
     int jet_tauflav_, jet_muflav_, jet_elflav_, jet_taudecaymode_, jet_lepflav_;
     int jet_taucharge_;
+    int jet_genmatch_lep_pt_;
+    int jet_genmatch_lep_vis_pt_;
     // --------------------
     bool jet_reject_;
     float jet_eta_;
     float jet_phi_;
     float jet_pt_;
     float jet_pt_raw_;
+    float jet_pt_corr_;
     float jet_mass_;
     // float jet_mass_raw_;
     float jet_energy_;
@@ -224,6 +235,8 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     float jet_tauscore_;
 
     float jet_taumatch_dR_;
+
+    float jet_jecmatch_dR_;
 
     unsigned int jet_hflav_;
     int jet_pflav_;
@@ -242,10 +255,12 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     // jet pf candidates
     unsigned int njet_pfcand_;
     std::vector<float> jet_pfcand_pt;
+    std::vector<float> jet_pfcand_pt_rel;
     std::vector<float> jet_pfcand_px;
     std::vector<float> jet_pfcand_py;
     std::vector<float> jet_pfcand_pz;
     std::vector<float> jet_pfcand_pt_log;
+    std::vector<float> jet_pfcand_pt_rel_log;
     std::vector<float> jet_pfcand_eta;
     std::vector<float> jet_pfcand_phi;
     std::vector<float> jet_pfcand_mass;
@@ -305,11 +320,13 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
        
 };
 
-
+    // pileupInfoTag_(iConfig.getParameter<edm::InputTag>("pileupInfo")),
+    // this->consumeTemplate<edm::View<PileupSummaryInfo>>(pileupInfoTag_);
 JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     genjets_(consumes<std::vector<reco::GenJet>>(iConfig.getParameter<edm::InputTag>("genJets"))),
     genparticles_(consumes<std::vector<reco::GenParticle>>(iConfig.getParameter<edm::InputTag>("genParticles"))),
     scjets_(consumes<std::vector<l1t::PFJet>>(iConfig.getParameter<edm::InputTag>("scPuppiJets"))), // l1tSCPFL1PuppiEmulator
+    scjetsCorr_(consumes<std::vector<l1t::PFJet>>(iConfig.getParameter<edm::InputTag>("scPuppiJetsCorr"))), // l1tSCPFL1PuppiEmulator
     nntaus_(consumes<std::vector<l1t::PFTau>>(iConfig.getParameter<edm::InputTag>("nnTaus"))), 
     genJetsFlavour_   (consumes<reco::JetFlavourInfoMatchingCollection >    (iConfig.getParameter<edm::InputTag>("genJetsFlavour"))),
     fVtxEmu_(consumes<std::vector<l1t::VertexWord>>(iConfig.getParameter<edm::InputTag>("vtx"))),
@@ -348,6 +365,10 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     tree_->Branch("jet_taucharge", &jet_taucharge_);
 
 
+    tree_->Branch("jet_genmatch_lep_pt", &jet_genmatch_lep_pt_);
+    tree_->Branch("jet_genmatch_lep_vis_pt", &jet_genmatch_lep_vis_pt_);
+
+
 
     tree_->Branch("jet_genmatch_pt", &jet_genmatch_pt_);
     tree_->Branch("jet_genmatch_eta", &jet_genmatch_eta_);
@@ -360,14 +381,17 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     // tree_->Branch("jet_genmatch_nbhad", &jet_genmatch_nbhad_);
     // tree_->Branch("jet_genmatch_nchad", &jet_genmatch_nchad_);
 
-
+    tree_->Branch("jet_jecmatch_dR", &jet_jecmatch_dR_);
+    tree_->Branch("jet_pt_corr", &jet_pt_corr_);
 
     tree_->Branch("jet_npfcand", &njet_pfcand_);
     tree_->Branch("jet_pfcand_pt", &jet_pfcand_pt, njet_pfcand_);
+    tree_->Branch("jet_pfcand_pt_rel", &jet_pfcand_pt_rel, njet_pfcand_);
     tree_->Branch("jet_pfcand_px", &jet_pfcand_px, njet_pfcand_);
     tree_->Branch("jet_pfcand_py", &jet_pfcand_py, njet_pfcand_);
     tree_->Branch("jet_pfcand_pz", &jet_pfcand_pz, njet_pfcand_);
     tree_->Branch("jet_pfcand_pt_log", &jet_pfcand_pt_log, njet_pfcand_);
+    tree_->Branch("jet_pfcand_pt_rel_log", &jet_pfcand_pt_rel_log, njet_pfcand_);
     tree_->Branch("jet_pfcand_eta", &jet_pfcand_eta, njet_pfcand_);
     tree_->Branch("jet_pfcand_phi", &jet_pfcand_phi, njet_pfcand_);
     tree_->Branch("jet_pfcand_mass", &jet_pfcand_mass, njet_pfcand_);
@@ -452,9 +476,24 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     run_  = iEvent.id().run();
     lumi_ = iEvent.id().luminosityBlock();
     event_ = iEvent.id().event();
+
+    // // True-level vertices for pileup weighting
+    // if(!iEvent.isRealData()){
+    //     edm::Handle<edm::View<PileupSummaryInfo> > pileupInfo;
+    //     iEvent.getByLabel(pileupInfoTag_, pileupInfo);
+    //     // Loop over pileup vector with size 3
+    //     for(edm::View<PileupSummaryInfo>::const_iterator i_pileup = pileupInfo->begin(); i_pileup != pileupInfo->end(); ++i_pileup){
+    //         // -1: previous BX, 0: current BX,  1: next BX
+    //         if(i_pileup->getBunchCrossing() == 0) vertexMultiplicityTrue_ = i_pileup->getTrueNumInteractions();
+    //     }
+    // }
+
+
+
     edm::Handle<std::vector<reco::GenJet>> genjets;
     edm::Handle<std::vector<reco::GenParticle>> genparticles;
     edm::Handle<std::vector<l1t::PFJet>> scjets;
+    edm::Handle<std::vector<l1t::PFJet>> scjetsCorr;
     edm::Handle<std::vector<l1t::PFTau>> nntaus;
 
     edm::Handle<reco::JetFlavourInfoMatchingCollection> genJetsFlavour;
@@ -474,6 +513,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         
     }
     iEvent.getByToken(scjets_, scjets);
+    iEvent.getByToken(scjetsCorr_, scjetsCorr);
     iEvent.getByToken(nntaus_, nntaus);
 
     float vz = 0.;
@@ -514,15 +554,27 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
     sort(jetv_l1.begin(), jetv_l1.end(), jetRefSorter);
 
+    std::vector<l1t::PFJetRef> jetv_l1_corr;
+    // std::vector<float> bjetScores;
+    for (auto jets_iter_corr = scjetsCorr->begin(); jets_iter_corr != scjetsCorr->end(); ++jets_iter_corr) {                                                                                                   
+        l1t::PFJetRef jrefcorr(scjetsCorr, jets_iter_corr - scjetsCorr->begin());                                                                                                                          
+        // if (jrefcorr->pt() < jetPtMin_) continue;
+        // if (fabs(jrefcorr->eta()) > jetEtaMax_) continue;                 
+        // if (fabs(jrefcorr->eta()) < jetEtaMin_) continue;                 
+        jetv_l1_corr.push_back(jrefcorr);                                                                                                                                                              
+    }
+    sort(jetv_l1_corr.begin(), jetv_l1_corr.end(), jetRefSorter);
+
     std::vector<l1t::PFTauRef> tauv_l1;
     // std::vector<float> tauscores;
-    for (auto jets_iter = nntaus->begin(); jets_iter != nntaus->end(); ++jets_iter) {                                                                                                   
-        l1t::PFTauRef tref(nntaus, jets_iter - nntaus->begin());     
+    for (auto tau_iter = nntaus->begin(); tau_iter != nntaus->end(); ++tau_iter) {                                                                                                   
+        l1t::PFTauRef tref(nntaus, tau_iter - nntaus->begin());     
         // std::cout<<"NN tau pt: "<< tref->pt()<< "     eta: "<< tref->eta()<<"      phi:"<<tref->phi()<<std::endl;                                                                                                                            
         // std::cout<<"tauID: "<< tref->chargedIso()<<std::endl;                                                                                                                            
-        if (tref->pt() < jetPtMin_) continue;
-        if (fabs(tref->eta()) > jetEtaMax_) continue;                 
-        if (fabs(tref->eta()) < jetEtaMin_) continue;                 
+        if (tref->pt() < 10.) continue;
+        // if (tref->pt() < jetPtMin_) continue;
+        // if (fabs(tref->eta()) > jetEtaMax_) continue;                 
+        // if (fabs(tref->eta()) < jetEtaMin_) continue;                 
         tauv_l1.push_back(tref);                                                                                                                                                              
         // tauscores.push_back((*bjetIDhandle)[jref]);                                                                                                                                                              
     }
@@ -633,7 +685,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         jet_reject_  = false;
         // exclude, when a jet is matched with a lepton, those for which the matched lepton is below the chosen pt threshold
         // Jet id applied only to jets not overlapping with gen-leptons
-        if(applyJetIDFlag and pos_matched_genmu  == -1 and pos_matched_genele == -1 and pos_matched_tauh == -1){
+        if(applyJetIDFlag && pos_matched_genmu  == -1 && pos_matched_genele == -1 && pos_matched_tauh == -1){
             jet_reject_ = true;
         }
         if(pos_matched_genmu != -1 and genLeptonVis4V.Pt() < ptGenLeptonMin){
@@ -676,6 +728,9 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
         jet_lepflav_ = nlep_in_cone;
 
+        jet_genmatch_lep_pt_ = genLepton4V.Pt();
+        jet_genmatch_lep_vis_pt_ = genLeptonVis4V.Pt();
+
 
         // match to TAUS
         int   pos_matched_tau = -1;
@@ -693,6 +748,23 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         }else{
             jet_taumatch_dR_ = 999.;
             jet_tauscore_ = -1.;
+        }
+
+        // match to jec jets
+        int   pos_matched_jec = -1;
+        float minDR_jec = 0.4;
+        for(size_t ijec = 0; ijec < jetv_l1_corr.size(); ijec++){
+            if(reco::deltaR(jetv_l1_corr[ijec]->p4(),jetv_l1[i]->p4()) < minDR_jec){
+                pos_matched_jec = ijec;
+                minDR_jec = reco::deltaR(jetv_l1_corr[ijec]->p4(),jetv_l1[i]->p4());
+            }
+        }
+        if (pos_matched_jec > -1){
+            jet_jecmatch_dR_ = minDR_jec;
+            jet_pt_corr_ = jetv_l1_corr[pos_matched_jec]->pt();
+        }else{
+            jet_jecmatch_dR_ = 999.;
+            jet_pt_corr_ = -1.;
         }
         
 
@@ -726,10 +798,12 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     
 
         jet_pfcand_pt.clear();
+        jet_pfcand_pt_rel.clear();
         jet_pfcand_px.clear();
         jet_pfcand_py.clear();
         jet_pfcand_pz.clear();
         jet_pfcand_pt_log.clear();
+        jet_pfcand_pt_rel_log.clear();
         jet_pfcand_eta.clear();
         jet_pfcand_phi.clear();
         jet_pfcand_mass.clear();
@@ -788,10 +862,12 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             njet_pfcand_++;
 
             jet_pfcand_pt.push_back(pfcand.pt());
+            jet_pfcand_pt_rel.push_back(pfcand.pt()/jetv_l1[i]->pt());
             jet_pfcand_px.push_back(pfcand.px());
             jet_pfcand_py.push_back(pfcand.py());
             jet_pfcand_pz.push_back(pfcand.py());
             jet_pfcand_pt_log.push_back(std::log(pfcand.pt()));
+            jet_pfcand_pt_rel_log.push_back(std::log(pfcand.pt()/jetv_l1[i]->pt()));
             jet_pfcand_eta.push_back(pfcand.eta());
             jet_pfcand_phi.push_back(pfcand.phi());
             jet_pfcand_mass.push_back(pfcand.mass());

@@ -121,14 +121,14 @@ process.ntuple = cms.EDAnalyzer("ResponseNTuplizer",
 )
 
 # create new jet tupler
-process.jetntuple = cms.EDAnalyzer("JetNTuplizer",
+process.tauntuple = cms.EDAnalyzer("MyGenTauNTuplizer",
     genJets = cms.InputTag("ak4GenJetsNoNu"),
     genParticles = cms.InputTag("genParticles"),
     # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiEmulator"),
     # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiCorrectedEmulator"),
     # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiExtendedCorrectedEmulator"),
     scPuppiJets = cms.InputTag("l1tSCPFL1PuppiExtendedEmulator"),
-    scPuppiJetsCorr = cms.InputTag("l1tSCPFL1PuppiExtendedCorrectedEmulator"),
+    # scPuppiJetsCorr = cms.InputTag("l1tSCPFL1PuppiExtendedCorrectedEmulator"),
     nnTaus = cms.InputTag("l1tNNTauProducerPuppi","L1PFTausNN"),
     genJetsFlavour = cms.InputTag("genFlavourInfo"),
     vtx = cms.InputTag("l1tVertexFinderEmulator","L1VerticesEmulation"),
@@ -171,16 +171,12 @@ monitorPerf("L1Puppi", "l1tLayer1:Puppi")
 # to check available tags:
 #process.content = cms.EDAnalyzer("EventContentAnalyzer")
 process.p = cms.Path(
-        # process.ntuple + #process.content +
-        # process.jetntuple #process.content +
-        # process.l1pfjetTable + 
-        # process.l1pfmetTable + process.l1pfmetCentralTable
         )
-process.endTuple = cms.EndPath(process.jetntuple)
+process.endTuple = cms.EndPath(process.tauntuple)
 process.p.associate(process.extraPFStuff)
 process.p.associate(process.L1TPFJetsExtendedTask)
 process.p.associate(process.L1TBJetsTask)
-process.TFileService = cms.Service("TFileService", fileName = cms.string("jetTuple.root"))
+process.TFileService = cms.Service("TFileService", fileName = cms.string("genTauTuple.root"))
 
 # for full debug:
 #process.out = cms.OutputModule("PoolOutputModule",
@@ -697,26 +693,26 @@ if False:
     # process.source.fileNames  = [ '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1-1.root'] 
     process.source.fileNames  = [
         '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_2.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_3.root',
-        # # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_4.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_5.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_6.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_7.root',
-        # # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_8.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_9.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_10.root',
-        # # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_11.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_12.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_13.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_14.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_15.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_16.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_17.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_18.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_19.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_20.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_21.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_2.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_3.root',
+        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_4.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_5.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_6.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_7.root',
+        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_8.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_9.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_10.root',
+        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_11.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_12.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_13.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_14.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_15.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_16.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_17.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_18.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_19.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_20.root',
+        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_21.root',
     ] 
     #goMT(4)
     
