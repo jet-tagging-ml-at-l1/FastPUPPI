@@ -208,8 +208,8 @@ class MyGenTauNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,
 
     int gentau_tauflav_, gentau_muflav_, gentau_elflav_, gentau_taudecaymode_, tau_genlepflav_;
     int gentau_taucharge_;
-    int gentau_genmatch_lep_pt_;
-    int gentau_genmatch_lep_vis_pt_;
+    float gentau_genmatch_lep_pt_;
+    float gentau_genmatch_lep_vis_pt_;
     // --------------------
     bool gentau_reject_;
 
@@ -353,7 +353,8 @@ MyGenTauNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     std::vector<l1t::PFJetRef> jetv_l1;
     for (auto jets_iter = scjets->begin(); jets_iter != scjets->end(); ++jets_iter) {                                                                                                   
         l1t::PFJetRef jref(scjets, jets_iter - scjets->begin());                                                                                                                             
-        if (jref->pt() < 10.) continue;             
+        // if (jref->pt() < 10.) continue;             
+        if (jref->pt() < 1.) continue;             
         jetv_l1.push_back(jref);                                                                                                                                                              
     }
     sort(jetv_l1.begin(), jetv_l1.end(), jetRefSorter);
@@ -361,7 +362,8 @@ MyGenTauNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     std::vector<l1t::PFTauRef> tauv_l1;
     for (auto tau_iter = nntaus->begin(); tau_iter != nntaus->end(); ++tau_iter) {                                                                                                   
         l1t::PFTauRef tref(nntaus, tau_iter - nntaus->begin());
-        if (tau_iter->pt() < 10.) continue;                                                                                                                                  
+        // if (tau_iter->pt() < 10.) continue;                                                                                                                                  
+        if (tau_iter->pt() < 1.) continue;                                                                                                                                  
         // if (tref->pt() < jetPtMin_) continue;
         // if (fabs(tref->eta()) > jetEtaMax_) continue;                 
         // if (fabs(tref->eta()) < jetEtaMin_) continue;                  
@@ -374,7 +376,7 @@ MyGenTauNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     // size_t itau = 0; itau < tau_gen_visible_.size(); itau++
     for (size_t i = 0; i < tau_gen_visible_.size(); i++) {
         
-        if (tau_gen_visible_[i].Pt() < 5.) continue;
+        if (tau_gen_visible_[i].Pt() < 3.) continue;
         if (fabs(tau_gen_visible_[i].Eta()) > 3.) continue;                 
         // if (fabs(tau_gen_visible_[i].Eta()) < 3.) continue;    
 
@@ -513,6 +515,8 @@ MyGenTauNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         gentau_genmatch_lep_pt_ = tau_gen_[i].Pt();
         gentau_genmatch_lep_vis_pt_ = tau_gen_visible_[i].Pt();
 
+        // std::cout<<gentau_pt_<<" "<<gentau_genmatch_lep_vis_pt_<<" "<<tau_gen_visible_[i].Pt()<<std::endl;
+
 
         TLorentzVector temp4V;
 
@@ -555,10 +559,10 @@ MyGenTauNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
             }
         }
         if (pos_matched_tau > -1){
-            recotau_pt_ =  jetv_l1[pos_matched_tau]->pt();
-            recotau_eta_ =  jetv_l1[pos_matched_tau]->eta();
-            recotau_phi_ =  jetv_l1[pos_matched_tau]->phi();
-            recotau_mass_ =  jetv_l1[pos_matched_tau]->mass();
+            recotau_pt_ =  tauv_l1[pos_matched_tau]->pt();
+            recotau_eta_ =  tauv_l1[pos_matched_tau]->eta();
+            recotau_phi_ =  tauv_l1[pos_matched_tau]->phi();
+            recotau_mass_ =  tauv_l1[pos_matched_tau]->mass();
             recotau_match_dR_ = minDR_tau;
             recotau_tauscore_ =tauv_l1[pos_matched_tau]->chargedIso();
         }else{

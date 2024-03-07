@@ -209,8 +209,8 @@ class MyTauNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm
 
     int tau_tauflav_, tau_muflav_, tau_elflav_, tau_taudecaymode_, tau_lepflav_;
     int tau_taucharge_;
-    int tau_genmatch_lep_pt_;
-    int tau_genmatch_lep_vis_pt_;
+    float tau_genmatch_lep_pt_;
+    float tau_genmatch_lep_vis_pt_;
     // --------------------
     bool tau_reject_;
     float tau_eta_;
