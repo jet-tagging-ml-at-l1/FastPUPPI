@@ -124,11 +124,15 @@ process.ntuple = cms.EDAnalyzer("ResponseNTuplizer",
 process.tauntuple = cms.EDAnalyzer("MyTauNTuplizer",
     genJets = cms.InputTag("ak4GenJetsNoNu"),
     genParticles = cms.InputTag("genParticles"),
-    # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiEmulator"),
-    # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiCorrectedEmulator"),
-    # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiExtendedCorrectedEmulator"),
-    scPuppiJets = cms.InputTag("l1tSCPFL1PuppiExtendedEmulator"),
+
+    # baseline TRK
+    scPuppiJets = cms.InputTag("l1tSCPFL1PuppiEmulator"),
+    scPuppiJetsCorr = cms.InputTag("l1tSCPFL1PuppiCorrectedEmulator"),
+
+    # extended TRK
+    # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiExtendedEmulator"),
     # scPuppiJetsCorr = cms.InputTag("l1tSCPFL1PuppiExtendedCorrectedEmulator"),
+
     nnTaus = cms.InputTag("l1tNNTauProducerPuppi","L1PFTausNN"),
     genJetsFlavour = cms.InputTag("genFlavourInfo"),
     vtx = cms.InputTag("l1tVertexFinderEmulator","L1VerticesEmulation"),
@@ -272,10 +276,17 @@ def addSeededConeJets():
 
 def addBtagging():
     process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
-    process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSCPFL1PuppiExtendedEmulator")
+    process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSCPFL1PuppiEmulator")
     process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
     process.extraPFStuff.add(process.L1TBJetsTask)
     #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
+
+# def addBtagging():
+#     process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
+#     process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSCPFL1PuppiExtendedEmulator")
+#     process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
+#     process.extraPFStuff.add(process.L1TBJetsTask)
+#     #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
 
 def addTaus():
     process.load("L1Trigger.Phase2L1ParticleFlow.L1NNTauProducer_cff")
@@ -720,6 +731,7 @@ if True:
     # addAllJets()
     addSeededConeJets()
     addBtagging()  
+    # addBtaggingExtended()  
     addTaus()  
     addJetConstituents(30)
     addGenJetFlavourTable()

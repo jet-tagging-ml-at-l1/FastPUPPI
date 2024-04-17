@@ -124,11 +124,15 @@ process.ntuple = cms.EDAnalyzer("ResponseNTuplizer",
 process.jetntuple = cms.EDAnalyzer("JetNTuplizer",
     genJets = cms.InputTag("ak4GenJetsNoNu"),
     genParticles = cms.InputTag("genParticles"),
-    # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiEmulator"),
-    # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiCorrectedEmulator"),
-    # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiExtendedCorrectedEmulator"),
-    scPuppiJets = cms.InputTag("l1tSCPFL1PuppiExtendedEmulator"),
-    scPuppiJetsCorr = cms.InputTag("l1tSCPFL1PuppiExtendedCorrectedEmulator"),
+
+    # baseline TRK
+    scPuppiJets = cms.InputTag("l1tSCPFL1PuppiEmulator"),
+    scPuppiJetsCorr = cms.InputTag("l1tSCPFL1PuppiCorrectedEmulator"),
+
+    # extended TRK
+    # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiExtendedEmulator"),
+    # scPuppiJetsCorr = cms.InputTag("l1tSCPFL1PuppiExtendedCorrectedEmulator"),
+
     nnTaus = cms.InputTag("l1tNNTauProducerPuppi","L1PFTausNN"),
     genJetsFlavour = cms.InputTag("genFlavourInfo"),
     vtx = cms.InputTag("l1tVertexFinderEmulator","L1VerticesEmulation"),
@@ -274,16 +278,23 @@ def addSeededConeJets():
     process.l1pfjetTable.jets.scPuppiExtended = cms.InputTag('l1tSCPFL1PuppiExtendedEmulator')
     process.l1pfjetTable.jets.scPuppiExtendedCorr = cms.InputTag('l1tSCPFL1PuppiExtendedCorrectedEmulator')
 
-def addBtagging():
+def addBtagging(): #baselineTRK
     process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
-    process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSCPFL1PuppiExtendedEmulator")
+    process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSCPFL1PuppiEmulator")
     process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
     process.extraPFStuff.add(process.L1TBJetsTask)
     #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
 
+# def addBtagging(): #extended TRK
+#     process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
+#     process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSCPFL1PuppiExtendedEmulator")
+#     process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
+#     process.extraPFStuff.add(process.L1TBJetsTask)
+#     #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
+
 def addTaus():
     process.load("L1Trigger.Phase2L1ParticleFlow.L1NNTauProducer_cff")
-    process.l1tNNTauProducerPuppi.maxtaus = cms.int32(50)
+    process.l1tNNTauProducerPuppi.maxtaus = cms.int32(500)
     process.extraPFStuff.add(process.l1tNNTauProducerPuppi)
 
 def addPhase1Jets():
@@ -721,13 +732,13 @@ if False:
     #goMT(4)
     
     addAllLeps()
-    # addAllJets()
     addSeededConeJets()
     addBtagging()  
+    # addBtaggingExtended()  
     addTaus()  
     addJetConstituents(30)
     addGenJetFlavourTable()
-    saveCands() # not needed for jet studies per se, but saves all L1 PF & PUPPI candidates
+    # saveCands() # not needed for jet studies per se, but saves all L1 PF & PUPPI candidates
 
 
     if False:
@@ -740,4 +751,4 @@ if False:
         getattr(process, 'l1tLayer1'+R).trkPtCut = 10
         getattr(process, 'l1tLayer1'+R).pfAlgoParameters.debug = True
 
-# open("debugDump.py", "w").write(process.dumpPython())
+# open("debugDumpJetNTuple.py", "w").write(process.dumpPython())
