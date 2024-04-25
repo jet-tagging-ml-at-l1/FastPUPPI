@@ -271,12 +271,7 @@ MyGenTauNTuplizer::MyGenTauNTuplizer(const edm::ParameterSet& iConfig) :
     tree_->Branch("recotau_mass", &recotau_mass_);
     tree_->Branch("recotau_match_dR", &recotau_match_dR_);
     
-    // tree_->Branch("gentau_reject", &gentau_reject_);
-    // tree_->Branch("gentau_tauflav", &gentau_tauflav_);
-    // tree_->Branch("gentau_muflav", &gentau_muflav_);
-    // tree_->Branch("gentau_elflav", &gentau_elflav_);
     tree_->Branch("gentau_taudecaymode", &gentau_taudecaymode_);
-    // tree_->Branch("gentau_lepflav", &gentau_lepflav_);
     tree_->Branch("gentau_taucharge", &gentau_taucharge_);
 
     tree_->Branch("gentau_lep_pt", &gentau_genmatch_lep_pt_);
@@ -524,7 +519,7 @@ MyGenTauNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         int   pos_matched_jet = -1;
         float minDR_jet = 0.4;
         for(size_t ijet = 0; ijet < jetv_l1.size(); ijet++){
-            temp4V.SetPtEtaPhiM(jetv_l1[ijet]->pt(),jetv_l1[ijet]->eta(),jetv_l1[ijet]->phi(),jetv_l1[ijet]->mass());
+            temp4V.SetPtEtaPhiM(jetv_l1[ijet]->pt(), jetv_l1[ijet]->eta(), jetv_l1[ijet]->phi(), jetv_l1[ijet]->mass());
             // if(reco::deltaR(jetv_l1[ijet]->p4(), tau_gen_visible_[i]) < minDR_jet){
             if(tau_gen_visible_[i].DeltaR(temp4V) < minDR_jet){
                 pos_matched_jet = ijet;
@@ -553,7 +548,7 @@ MyGenTauNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         for(size_t itau = 0; itau < tauv_l1.size(); itau++){
             temp4V.SetPtEtaPhiM(tauv_l1[itau]->pt(),tauv_l1[itau]->eta(),tauv_l1[itau]->phi(),tauv_l1[itau]->mass());
             // if(reco::deltaR(tauv_l1[itau]->p4(), tau_gen_visible_[i]) < minDR_tau){
-            if(tau_gen_visible_[i].DeltaR(temp4V) < minDR_jet){
+            if(tau_gen_visible_[i].DeltaR(temp4V) < minDR_tau){
                 pos_matched_tau = itau;
                 minDR_tau = tau_gen_visible_[i].DeltaR(temp4V);
             }

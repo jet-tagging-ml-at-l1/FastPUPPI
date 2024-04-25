@@ -20,8 +20,8 @@ process.source = cms.Source("PoolSource",
             "drop l1tTkPrimaryVertexs_*_*_*")
 )
 
-process.load('Configuration.Geometry.GeometryExtended2026D88Reco_cff')
-process.load('Configuration.Geometry.GeometryExtended2026D88_cff')
+process.load('Configuration.Geometry.GeometryExtended2026D95Reco_cff')
+process.load('Configuration.Geometry.GeometryExtended2026D95_cff')
 process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.SimL1Emulator_cff')
 process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff') # needed to read HCal TPs
@@ -34,12 +34,16 @@ from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
 from RecoMET.METProducers.pfMet_cfi import pfMet
 
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, '125X_mcRun4_realistic_v2', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, '131X_mcRun4_realistic_v9', '')
 
 # NOTE: we need this to avoid saving the stubs
 process.l1tTrackSelectionProducer.processSimulatedTracks = False
 
+from L1Trigger.L1CaloTrigger.l1tPhase2L1CaloEGammaEmulator_cfi import l1tPhase2L1CaloEGammaEmulator
+process.l1tPhase2L1CaloEGammaEmulator = l1tPhase2L1CaloEGammaEmulator.clone()
+
 process.extraPFStuff = cms.Task(
+        process.l1tPhase2L1CaloEGammaEmulator,
         process.l1tSAMuonsGmt,
         process.l1tGTTInputProducer,
         process.l1tTrackSelectionProducer,
@@ -126,12 +130,12 @@ process.tauntuple = cms.EDAnalyzer("MyTauNTuplizer",
     genParticles = cms.InputTag("genParticles"),
 
     # baseline TRK
-    scPuppiJets = cms.InputTag("l1tSCPFL1PuppiEmulator"),
-    scPuppiJetsCorr = cms.InputTag("l1tSCPFL1PuppiCorrectedEmulator"),
+    # scPuppiJets = cms.InputTag("l1tSC4PFL1PuppiEmulator"),
+    # scPuppiJetsCorr = cms.InputTag("l1tSC4PFL1PuppiCorrectedEmulator"),
 
     # extended TRK
-    # scPuppiJets = cms.InputTag("l1tSCPFL1PuppiExtendedEmulator"),
-    # scPuppiJetsCorr = cms.InputTag("l1tSCPFL1PuppiExtendedCorrectedEmulator"),
+    scPuppiJets = cms.InputTag("l1tSC4PFL1PuppiExtendedEmulator"),
+    scPuppiJetsCorr = cms.InputTag("l1tSC4PFL1PuppiExtendedCorrectedEmulator"),
 
     nnTaus = cms.InputTag("l1tNNTauProducerPuppi","L1PFTausNN"),
     genJetsFlavour = cms.InputTag("genFlavourInfo"),
@@ -266,31 +270,31 @@ def addCalib():
 
 def addSeededConeJets():
     process.extraPFStuff.add(process.L1TPFJetsTask)
-    process.l1pfjetTable.jets.scPuppiSim = cms.InputTag('l1tSCPFL1Puppi')
-    process.l1pfjetTable.jets.scPuppi = cms.InputTag('l1tSCPFL1PuppiEmulator')
-    process.l1pfjetTable.jets.scPuppiCorr = cms.InputTag('l1tSCPFL1PuppiCorrectedEmulator')
-    process.l1pfmetTable.mets.scPuppiCorrMHT = cms.InputTag("l1tSCPFL1PuppiCorrectedEmulatorMHT")
+    process.l1pfjetTable.jets.scPuppiSim = cms.InputTag('l1tSC4PFL1Puppi')
+    process.l1pfjetTable.jets.scPuppi = cms.InputTag('l1tSC4PFL1PuppiEmulator')
+    process.l1pfjetTable.jets.scPuppiCorr = cms.InputTag('l1tSC4PFL1PuppiCorrectedEmulator')
+    process.l1pfmetTable.mets.scPuppiCorrMHT = cms.InputTag("l1tSC4PFL1PuppiCorrectedEmulatorMHT")
     process.extraPFStuff.add(process.L1TPFJetsExtendedTask)
-    process.l1pfjetTable.jets.scPuppiExtended = cms.InputTag('l1tSCPFL1PuppiExtendedEmulator')
-    process.l1pfjetTable.jets.scPuppiExtendedCorr = cms.InputTag('l1tSCPFL1PuppiExtendedCorrectedEmulator')
+    process.l1pfjetTable.jets.scPuppiExtended = cms.InputTag('l1tSC4PFL1PuppiExtendedEmulator')
+    process.l1pfjetTable.jets.scPuppiExtendedCorr = cms.InputTag('l1tSC4PFL1PuppiExtendedCorrectedEmulator')
 
-def addBtagging():
-    process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
-    process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSCPFL1PuppiEmulator")
-    process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
-    process.extraPFStuff.add(process.L1TBJetsTask)
-    #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
-
-# def addBtagging():
+# def addBtagging(): #baselineTRK
 #     process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
-#     process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSCPFL1PuppiExtendedEmulator")
+#     process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSC4PFL1PuppiEmulator")
 #     process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
 #     process.extraPFStuff.add(process.L1TBJetsTask)
 #     #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
 
+def addBtagging(): #extended TRK
+    process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
+    process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSC4PFL1PuppiExtendedEmulator")
+    process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
+    process.extraPFStuff.add(process.L1TBJetsTask)
+    #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
+
 def addTaus():
     process.load("L1Trigger.Phase2L1ParticleFlow.L1NNTauProducer_cff")
-    process.l1tNNTauProducerPuppi.maxtaus = cms.int32(50)
+    process.l1tNNTauProducerPuppi.maxtaus = cms.int32(500)
     process.extraPFStuff.add(process.l1tNNTauProducerPuppi)
 
 def addPhase1Jets():
@@ -300,7 +304,7 @@ def addPhase1Jets():
     process.l1pfjetTable.jets.phase19x9PuppiCorr = cms.InputTag('l1tPhase1JetCalibrator9x9', "Phase1L1TJetFromPfCandidates")
     process.l1pfjetTable.jets.phase19x9trimmedPuppi = cms.InputTag('l1tPhase1JetProducer9x9trimmed', "UncalibratedPhase1L1TJetFromPfCandidates")
     process.l1pfjetTable.jets.phase19x9trimmedPuppiCorr = cms.InputTag('l1tPhase1JetCalibrator9x9trimmed', "Phase1L1TJetFromPfCandidates")
-    process.l1pfmetTable.mets.scPuppiCorrMHT = cms.InputTag("l1tSCPFL1PuppiCorrectedEmulatorMHT")
+    process.l1pfmetTable.mets.scPuppiCorrMHT = cms.InputTag("l1tSC4PFL1PuppiCorrectedEmulatorMHT")
 
 def addCaloJets():
     process.extraPFStuff.add(process.l1tTowerCalibration, process.l1tCaloJet)
@@ -546,6 +550,33 @@ def addPFLep(pdgs=[11,13,22],opts=["PF","Puppi"], postfix=""):
                 setattr(process, w+"Ph"+postfix+"Table", phTable)
                 process.extraPFStuff.add(phTable)
 
+def addStaEG(postfix=""):        
+    def getStaEgTables(slice, postfix, inputtag):
+        staEgTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
+                        name = cms.string("EGSta"+slice+postfix),
+                        src = cms.InputTag(inputtag),
+                        cut = cms.string(""),
+                        doc = cms.string(""),
+                        singleton = cms.bool(False), # the number of entries is variable
+                        extension = cms.bool(False), # this is the main table
+                        variables = cms.PSet(
+                            pt  = Var("pt",  float,precision=8),
+                            phi = Var("phi", float,precision=8),
+                            eta  = Var("eta", float,precision=8),
+                            hwQual    = Var("hwQual", int, doc="id"),
+                        )
+                    )
+        return staEgTable
+
+    staEgEBEmuTable = getStaEgTables('EB', postfix, f"l1tPhase2L1CaloEGammaEmulator:GCTEGammas")
+    setattr(process, "EGStaEBEmuTable", staEgEBEmuTable)
+    process.extraPFStuff.add(staEgEBEmuTable)
+
+    staEgEEEmuTable = getStaEgTables('EE', postfix, f"l1tLayer1EG:L1EgEE")
+    setattr(process, "EGStaEETable", staEgEEEmuTable)
+    process.extraPFStuff.add(staEgEEEmuTable)
+
+
 def addTkEG(doL1=False, doL2=True, postfix=""):        
     def getTkEgTables(slice, postfix, tkem_inputtag, tkele_inputtag):
         tkEmTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
@@ -559,7 +590,6 @@ def addTkEG(doL1=False, doL2=True, postfix=""):
                             pt  = Var("pt",  float,precision=8),
                             phi = Var("phi", float,precision=8),
                             eta  = Var("eta", float,precision=8),
-                            charge  = Var("charge", int, doc="charge"),
                             hwQual    = Var("hwQual", int, doc="id"),
                             tkIso   = Var("trkIsol", float, precision=8),
                             tkIsoPV  = Var("trkIsolPV", float, precision=8),
@@ -578,6 +608,8 @@ def addTkEG(doL1=False, doL2=True, postfix=""):
         tkEleTable.variables.tkEta = Var("trkPtr.eta", float,precision=8)
         tkEleTable.variables.tkPhi = Var("trkPtr.phi", float,precision=8)
         tkEleTable.variables.tkPt = Var("trkPtr.momentum.perp", float,precision=8)
+        tkEleTable.variables.caloEta = Var("egCaloPtr.eta", float,precision=8)
+        tkEleTable.variables.caloPhi = Var("egCaloPtr.phi", float,precision=8)
         return tkEmTable, tkEleTable
                                    
     if doL1:    
@@ -594,7 +626,7 @@ def addTkEG(doL1=False, doL2=True, postfix=""):
         process.extraPFStuff.add(tkEmTable,tkEleTable)
 
 
-def addDecodedTk(regs=['HGCal']):        
+def addDecodedTk(regs=['HGCal','Barrel']):        
     for reg in regs:
         decTkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
                         name = cms.string("DecTk"+reg),
@@ -622,11 +654,55 @@ def addDecodedTk(regs=['HGCal']):
         process.extraPFStuff.add(decTkTable)
 
 
+
+def addEGCrystalClusters() -> None:
+    def getCrystalClustersTable(nameSrcDict : dict[str, str]) -> cms.EDProducer:
+        CrystalClustersTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
+                                        name = cms.string(nameSrcDict["name"]),
+                                        src=cms.InputTag(nameSrcDict["src"]),
+                                        cut = cms.string(""),
+                                        doc = cms.string(""),
+                                        singleton = cms.bool(False), # the number of entries is variable
+                                        extension = cms.bool(False), # this is the main table
+                                        variables = cms.PSet(
+                                            isolation  = Var("isolation", float,precision=8),
+                                            pt  = Var("pt",  float,precision=8),
+                                            eta  = Var("eta", float,precision=8),
+                                            phi = Var("phi", float,precision=8),
+                                            calibratedPt = Var("calibratedPt", float,precision=8),
+                                            hovere = Var("hovere", float,precision=8),
+                                            puCorrPt = Var("puCorrPt", float,precision=8),
+                                            bremStrength = Var("bremStrength", float,precision=8),
+                                            e2x2 = Var("e2x2", float,precision=8),
+                                            e2x5 = Var("e2x5", float,precision=8),
+                                            e3x5 = Var("e3x5", float,precision=8),
+                                            e5x5 = Var("e5x5", float,precision=8),
+                                            standaloneWP = Var("standaloneWP", int,precision=8),
+                                            electronWP98 = Var("electronWP98", int,precision=8),
+                                            photonWP80 = Var("photonWP80", int,precision=8),
+                                            electronWP90 = Var("electronWP90", int,precision=8),
+                                            looseL1TkMatchWP = Var("looseL1TkMatchWP", int,precision=8),
+                                            stage2effMatch= Var("stage2effMatch", int,precision=8),
+                                        )
+            )
+        return CrystalClustersTable
+    
+    nameSrcDictList=[
+        {"name":"CaloEGammaCrystalClustersRCT", "src":"l1tPhase2L1CaloEGammaEmulator:RCTClusters"},
+        {"name":"CaloEGammaCrystalClustersGCT", "src":"l1tPhase2L1CaloEGammaEmulator:GCTClusters"},
+    ]
+    for nameSrcDict in nameSrcDictList:
+        flatTable = getCrystalClustersTable(nameSrcDict)
+        setattr(process, f"{nameSrcDict['name']}Table", flatTable)
+        process.extraPFStuff.add(flatTable)
+
+
 def addAllLeps():
     addGenLep()
     addStaMu()
     addPFLep([13])
     addTkEG()
+    addEGCrystalClusters()
 
 def goGun(calib=1):
     process.ntuple.isParticleGun = True
@@ -701,41 +777,41 @@ def saveGenCands():
     process.p += process.gencandTable
 
 if True:
-    # process.source.fileNames  = [ '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1-1.root'] 
-    process.source.fileNames  = [
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_2.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_3.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_4.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_5.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_6.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_7.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_8.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_9.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_10.root',
-        # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_11.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_12.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_13.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_14.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_15.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_16.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_17.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_18.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_19.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_20.root',
-        '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_21.root',
-    ] 
-    #goMT(4)
+    process.source.fileNames  = [ 'file:/eos/cms/store/cmst3/group/l1tr/sewuchte/l1teg/fpinputs/131Xv9a/VBFHToTauTau_M-125_TuneCP5_14TeV-powheg-pythia8/VBFHtt_PU200_131Xv9a/240419_101643/0000/inputs131X_98.root'] 
+    # process.source.fileNames  = [
+    #     '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_2.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_3.root',
+    #     # # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_4.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_5.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_6.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_7.root',
+    #     # # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_8.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_9.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_10.root',
+    #     # # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_11.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_12.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_13.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_14.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_15.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_16.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_17.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_18.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_19.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_20.root',
+    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_21.root',
+    # ] 
+    goMT(4)
     
+    addAllJets()
     addAllLeps()
-    # addAllJets()
-    addSeededConeJets()
+    # addSeededConeJets()
     addBtagging()  
     # addBtaggingExtended()  
     addTaus()  
     addJetConstituents(30)
     addGenJetFlavourTable()
-    saveCands() # not needed for jet studies per se, but saves all L1 PF & PUPPI candidates
+    # saveCands() # not needed for jet studies per se, but saves all L1 PF & PUPPI candidates
 
 
     if False:

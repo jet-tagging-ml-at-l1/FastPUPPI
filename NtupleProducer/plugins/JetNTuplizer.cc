@@ -61,6 +61,8 @@
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
 #include "DataFormats/L1TrackTrigger/interface/TTTrack_TrackWord.h"
+#include "DataFormats/L1TParticleFlow/interface/datatypes.h"
+#include "L1Trigger/Phase2L1ParticleFlow/interface/jetmet/L1SeedConePFJetEmulator.h"
 
 namespace jettools{
 
@@ -236,6 +238,8 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
 
     float jet_bjetscore_;
     float jet_tauscore_;
+    float jet_taupt_;
+    // float jet_tauscoreHW_;
 
     float jet_taumatch_dR_;
 
@@ -260,6 +264,7 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     std::vector<float> jet_pfcand_pt;
     std::vector<float> jet_pfcand_pt_phys;
     std::vector<float> jet_pfcand_pt_rel;
+    std::vector<bool> jet_pfcand_isfilled;
     // std::vector<float> jet_pfcand_px;
     // std::vector<float> jet_pfcand_py;
     // std::vector<float> jet_pfcand_pz;
@@ -288,6 +293,7 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     std::vector<float> jet_pfcand_etarel;
 
     std::vector<float> jet_pfcand_track_valid;
+    std::vector<bool> jet_pfcand_track_isfilled;
     std::vector<float> jet_pfcand_track_rinv;
     std::vector<float> jet_pfcand_track_phizero;
     std::vector<float> jet_pfcand_track_tanl;
@@ -311,6 +317,7 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     std::vector<float> jet_pfcand_track_vz;
     std::vector<float> jet_pfcand_track_pterror;
 
+    std::vector<bool> jet_pfcand_cluster_isfilled;
     std::vector<float> jet_pfcand_cluster_hovere;
     std::vector<float> jet_pfcand_cluster_sigmarr;
     std::vector<float> jet_pfcand_cluster_abszbarycenter;
@@ -357,6 +364,8 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
 
     tree_->Branch("jet_bjetscore", &jet_bjetscore_);
     tree_->Branch("jet_tauscore", &jet_tauscore_);
+    tree_->Branch("jet_taupt", &jet_taupt_);
+    // tree_->Branch("jet_tauscoreHW", &jet_tauscoreHW_);
     
 
     tree_->Branch("jet_reject", &jet_reject_);
@@ -386,6 +395,7 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     tree_->Branch("jet_pt_corr", &jet_pt_corr_);
 
     tree_->Branch("jet_npfcand", &njet_pfcand_);
+    tree_->Branch("jet_pfcand_isfilled", &jet_pfcand_isfilled, njet_pfcand_);
     tree_->Branch("jet_pfcand_pt", &jet_pfcand_pt, njet_pfcand_);
     tree_->Branch("jet_pfcand_pt_rel", &jet_pfcand_pt_rel, njet_pfcand_);
     // tree_->Branch("jet_pfcand_px", &jet_pfcand_px, njet_pfcand_);
@@ -414,6 +424,7 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     tree_->Branch("jet_pfcand_etarel", &jet_pfcand_etarel, njet_pfcand_);
 
     tree_->Branch("jet_pfcand_track_valid", &jet_pfcand_track_valid, njet_pfcand_);
+    tree_->Branch("jet_pfcand_track_isfilled", &jet_pfcand_track_isfilled, njet_pfcand_);
     tree_->Branch("jet_pfcand_track_rinv", &jet_pfcand_track_rinv, njet_pfcand_);
     tree_->Branch("jet_pfcand_track_phizero", &jet_pfcand_track_phizero, njet_pfcand_);
     tree_->Branch("jet_pfcand_track_tanl", &jet_pfcand_track_tanl, njet_pfcand_);
@@ -438,6 +449,7 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     tree_->Branch("jet_pfcand_track_pterror", &jet_pfcand_track_pterror, njet_pfcand_);
 
 
+    tree_->Branch("jet_pfcand_cluster_isfilled", &jet_pfcand_cluster_isfilled, njet_pfcand_);
     tree_->Branch("jet_pfcand_cluster_hovere", &jet_pfcand_cluster_hovere, njet_pfcand_);
     tree_->Branch("jet_pfcand_cluster_sigmarr", &jet_pfcand_cluster_sigmarr, njet_pfcand_);
     tree_->Branch("jet_pfcand_cluster_abszbarycenter", &jet_pfcand_cluster_abszbarycenter, njet_pfcand_);
@@ -720,9 +732,14 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         if (pos_matched_tau > -1){
             jet_taumatch_dR_ = minDR_tau;
             jet_tauscore_ = tauv_l1[pos_matched_tau]->chargedIso();
+            jet_taupt_ = tauv_l1[pos_matched_tau]->pt();
+            // l1gt::Tau hwtau = tauv_l1[pos_matched_tau]->getHWTauGT();
+            // jet_tauscoreHW_ = hwtau->hwRawId;
         }else{
             jet_taumatch_dR_ = 999.;
             jet_tauscore_ = -1.;
+            jet_taupt_ = -1.;
+            // jet_tauscoreHW_ = -1.;
         }
 
         // match to jec jets
@@ -763,6 +780,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         jet_pfcand_pt.clear();
         jet_pfcand_pt_phys.clear();
         jet_pfcand_pt_rel.clear();
+        jet_pfcand_isfilled.clear();
         // jet_pfcand_px.clear();
         // jet_pfcand_py.clear();
         // jet_pfcand_pz.clear();
@@ -791,6 +809,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         jet_pfcand_etarel.clear();
 
         jet_pfcand_track_valid.clear();
+        jet_pfcand_track_isfilled.clear();
         jet_pfcand_track_rinv.clear();
         jet_pfcand_track_phizero.clear();
         jet_pfcand_track_tanl.clear();
@@ -814,6 +833,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         jet_pfcand_track_vz.clear();
         jet_pfcand_track_pterror.clear();
 
+        jet_pfcand_cluster_isfilled.clear();
         jet_pfcand_cluster_hovere.clear();
         jet_pfcand_cluster_sigmarr.clear();
         jet_pfcand_cluster_abszbarycenter.clear();
@@ -835,6 +855,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             jet_pfcand_pt_phys.push_back(pfcand.pt());
             // jet_pfcand_pt_rel.push_back(pfcand.pt()/jetv_l1[i]->pt());
             jet_pfcand_pt_rel.push_back(float(pfcand.hwPt())/jet_pt_);
+            jet_pfcand_isfilled.push_back(1);
             // jet_pfcand_px.push_back(pfcand.px());
             // jet_pfcand_py.push_back(pfcand.py());
             // jet_pfcand_pz.push_back(pfcand.py());
@@ -875,7 +896,16 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             jet_pfcand_ppara_ratio.push_back(jet_direction.Dot(pfcand_momentum)/pfcand_momentum.Mag());
 
             // jet_pfcand_dphi.push_back(jet_direction.DeltaPhi(pfcand_momentum));
-            jet_pfcand_dphi.push_back(deltaPhi(float(pfcand.hwPhi()), jet_phi_));
+            // jet_pfcand_dphi.push_back(deltaPhi(float(pfcand.hwPhi()), jet_phi_));
+            // https://github.com/cms-sw/cmssw/blob/master/L1Trigger/Phase2L1ParticleFlow/src/jetmet/L1SeedConePFJetEmulator.cc#L11
+
+            L1SCJetEmu::detaphi_t dphi(pfcand.hwPhi() - jet_phi_);
+            // phi wrap
+            L1SCJetEmu::detaphi_t dphi0 = dphi > L1SCJetEmu::detaphi_t(l1ct::Scales::INTPHI_PI) ? L1SCJetEmu::detaphi_t(l1ct::Scales::INTPHI_TWOPI - dphi) : L1SCJetEmu::detaphi_t(dphi);
+            L1SCJetEmu::detaphi_t dphi1 = dphi < L1SCJetEmu::detaphi_t(-l1ct::Scales::INTPHI_PI) ? L1SCJetEmu::detaphi_t(l1ct::Scales::INTPHI_TWOPI + dphi) : L1SCJetEmu::detaphi_t(dphi);
+            L1SCJetEmu::detaphi_t dphiw = dphi > L1SCJetEmu::detaphi_t(0) ? dphi0 : dphi1;
+            jet_pfcand_dphi.push_back(float(dphiw));
+
             // jet_pfcand_deta.push_back(jet_direction.Eta()-pfcand_momentum.Eta());
             jet_pfcand_deta.push_back(jet_eta_-float(pfcand.hwEta()));
             // jet_pfcand_etarel.push_back(etaRel(jetDir,pfcand.momentum()));
@@ -887,6 +917,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             
                 const TTTrack_TrackWord trackWord = track->trackWord();    
 
+                jet_pfcand_track_isfilled.push_back(1);
                 jet_pfcand_track_valid.push_back(trackWord.getValid());
                 jet_pfcand_track_rinv.push_back(trackWord.getRinv());
                 jet_pfcand_track_phizero.push_back(trackWord.getPhi());
@@ -913,6 +944,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
                 jet_pfcand_dxy_custom.push_back(-track->vx() * sin(track->phi()) + track->vy() * cos(track->phi()));  
             }else{
 
+                jet_pfcand_track_isfilled.push_back(0);
                 jet_pfcand_track_valid.push_back(0);
                 jet_pfcand_track_rinv.push_back(0);
                 jet_pfcand_track_phizero.push_back(0);
@@ -943,6 +975,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
             if(cluster.isNonnull()){ // need valid cluster object
 
+                jet_pfcand_cluster_isfilled.push_back(1);
                 jet_pfcand_cluster_hovere.push_back(cluster->hOverE());
                 jet_pfcand_cluster_sigmarr.push_back(cluster->sigmaRR());
                 jet_pfcand_cluster_abszbarycenter.push_back(cluster->absZBarycenter());
@@ -952,6 +985,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
             }else{
 
+                jet_pfcand_cluster_isfilled.push_back(0);
                 jet_pfcand_cluster_hovere.push_back(0);
                 jet_pfcand_cluster_sigmarr.push_back(0);
                 jet_pfcand_cluster_abszbarycenter.push_back(0);
