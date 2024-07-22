@@ -50,6 +50,14 @@
 #include "DataFormats/L1TParticleFlow/interface/PFTau.h"
 #include "DataFormats/L1TParticleFlow/interface/jets.h"
 
+#include "DataFormats/L1TCorrelator/interface/TkElectron.h"
+#include "DataFormats/L1TCorrelator/interface/TkElectronFwd.h"
+#include "DataFormats/L1TCorrelator/interface/TkEm.h"
+#include "DataFormats/L1TCorrelator/interface/TkEmFwd.h"
+#include "DataFormats/L1Trigger/interface/EGamma.h"
+
+#include "DataFormats/L1TMuonPhase2/interface/SAMuon.h"
+
 #include <cstdint>
 #include <TTree.h>
 #include <TRandom3.h>
@@ -64,6 +72,7 @@
 #include "DataFormats/L1TParticleFlow/interface/datatypes.h"
 #include "L1Trigger/Phase2L1ParticleFlow/interface/jetmet/L1SeedConePFJetEmulator.h"
 
+// some tools to fix inputs or calculate them
 namespace jettools{
 
     bool useoffsets = true;
@@ -98,6 +107,7 @@ namespace jettools{
         return 0.5 * std::log((energy + momPar) / (energy - momPar));
     }
 
+
     // Sorters to order object collections in decreasing order of pT
     template<typename T> 
     class PatPtSorter {
@@ -109,7 +119,6 @@ namespace jettools{
 
     PatPtSorter<l1t::PFCandidate>  l1PFCandidateSorter;
 
-
     template<typename T> 
     class PatRefPtSorter {
     public:
@@ -119,6 +128,8 @@ namespace jettools{
     };
     PatRefPtSorter<l1t::PFJetRef>    jetRefSorter;
     PatRefPtSorter<l1t::PFTauRef>    tauRefSorter;
+    PatRefPtSorter<l1t::TkElectronRef>    eleRefSorter;
+    PatRefPtSorter<l1t::SAMuonRef>    muonRefSorter;
     PatRefPtSorter<reco::GenJetRef>  genJetRefSorter;
 
 }
@@ -151,6 +162,8 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
         edm::EDGetTokenT<std::vector<l1t::PFJet>> scjets_;
         edm::EDGetTokenT<std::vector<l1t::PFJet>> scjetsCorr_;
         edm::EDGetTokenT<std::vector<l1t::PFTau>> nntaus_;
+        edm::EDGetTokenT<std::vector<l1t::TkElectron>> electrons_;
+        edm::EDGetTokenT<std::vector<l1t::SAMuon>> muons_;
         edm::EDGetTokenT<reco::JetFlavourInfoMatchingCollection> genJetsFlavour_;
         edm::EDGetTokenT<std::vector<l1t::VertexWord>> const fVtxEmu_;
         edm::EDGetTokenT<edm::ValueMap<float>> const bjetids_;
@@ -171,7 +184,6 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
         bool applyJetIDFlag = false;
         /// thresholds for matching
         float dRCone        = 0.2;
-        // float dRMatching    = 0.4;
         float ptGenLeptonMin = 8;
         float ptGenTauVisibleMin = 15;
 
@@ -219,6 +231,7 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     int jet_taucharge_;
     float jet_genmatch_lep_pt_;
     float jet_genmatch_lep_vis_pt_;
+    float jet_genmatch_lep_dR_;
     // --------------------
     bool jet_reject_;
     float jet_eta_;
@@ -229,8 +242,8 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     float jet_pt_phys_;
     float jet_pt_raw_;
     float jet_pt_corr_;
-    // float jet_mass_;
-    // float jet_energy_;
+    float jet_mass_;
+    float jet_energy_;
 
     // float jet_px_;
     // float jet_py_;
@@ -238,10 +251,15 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
 
     float jet_bjetscore_;
     float jet_tauscore_;
+    float jet_eletkiso_;
+    float jet_elepfiso_;
+    float jet_elepuppiiso_;
+    float jet_muoniso_;
     float jet_taupt_;
-    // float jet_tauscoreHW_;
 
     float jet_taumatch_dR_;
+    float jet_elematch_dR_;
+    float jet_muonmatch_dR_;
 
     float jet_jecmatch_dR_;
 
@@ -264,6 +282,7 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     std::vector<float> jet_pfcand_pt;
     std::vector<float> jet_pfcand_pt_phys;
     std::vector<float> jet_pfcand_pt_rel;
+    std::vector<float> jet_pfcand_pt_rel_phys;
     std::vector<bool> jet_pfcand_isfilled;
     // std::vector<float> jet_pfcand_px;
     // std::vector<float> jet_pfcand_py;
@@ -274,9 +293,9 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     std::vector<float> jet_pfcand_eta_phys;
     std::vector<float> jet_pfcand_phi;
     std::vector<float> jet_pfcand_phi_phys;
-    // std::vector<float> jet_pfcand_mass;
-    // std::vector<float> jet_pfcand_energy;
-    // std::vector<float> jet_pfcand_energy_log;
+    std::vector<float> jet_pfcand_mass;
+    std::vector<float> jet_pfcand_energy;
+    std::vector<float> jet_pfcand_energy_log;
     std::vector<float> jet_pfcand_puppiweight;
     std::vector<float> jet_pfcand_emid;
     std::vector<float> jet_pfcand_quality;
@@ -285,11 +304,24 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     std::vector<float> jet_pfcand_dxy;
     std::vector<float> jet_pfcand_dxy_custom;
     std::vector<unsigned int> jet_pfcand_id;
+    std::vector<bool> jet_pfcand_isPhoton;
+    std::vector<bool> jet_pfcand_isElectron;
+    std::vector<bool> jet_pfcand_isElectronPlus;
+    std::vector<bool> jet_pfcand_isElectronMinus;
+    std::vector<bool> jet_pfcand_isMuon;
+    std::vector<bool> jet_pfcand_isMuonPlus;
+    std::vector<bool> jet_pfcand_isMuonMinus;
+    std::vector<bool> jet_pfcand_isNeutralHadron;
+    std::vector<bool> jet_pfcand_isChargedHadron;
+    std::vector<bool> jet_pfcand_isChargedHadronPlus;
+    std::vector<bool> jet_pfcand_isChargedHadronMinus;
     std::vector<int> jet_pfcand_charge;
     std::vector<float> jet_pfcand_pperp_ratio;
     std::vector<float> jet_pfcand_ppara_ratio;
     std::vector<float> jet_pfcand_deta;
+    std::vector<float> jet_pfcand_deta_phys;
     std::vector<float> jet_pfcand_dphi;
+    std::vector<float> jet_pfcand_dphi_phys;
     std::vector<float> jet_pfcand_etarel;
 
     std::vector<float> jet_pfcand_track_valid;
@@ -338,6 +370,8 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     scjets_(consumes<std::vector<l1t::PFJet>>(iConfig.getParameter<edm::InputTag>("scPuppiJets"))), // l1tSCPFL1PuppiEmulator
     scjetsCorr_(consumes<std::vector<l1t::PFJet>>(iConfig.getParameter<edm::InputTag>("scPuppiJetsCorr"))), // l1tSCPFL1PuppiEmulator
     nntaus_(consumes<std::vector<l1t::PFTau>>(iConfig.getParameter<edm::InputTag>("nnTaus"))), 
+    electrons_(consumes<std::vector<l1t::TkElectron>>(iConfig.getParameter<edm::InputTag>("electrons"))), 
+    muons_(consumes<std::vector<l1t::SAMuon>>(iConfig.getParameter<edm::InputTag>("muons"))), 
     genJetsFlavour_   (consumes<reco::JetFlavourInfoMatchingCollection >    (iConfig.getParameter<edm::InputTag>("genJetsFlavour"))),
     fVtxEmu_(consumes<std::vector<l1t::VertexWord>>(iConfig.getParameter<edm::InputTag>("vtx"))),
     bjetids_(consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("bjetIDs")))
@@ -356,18 +390,20 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     tree_->Branch("jet_pt", &jet_pt_);
     tree_->Branch("jet_pt_phys", &jet_pt_phys_);
     tree_->Branch("jet_pt_raw", &jet_pt_raw_);
-    // tree_->Branch("jet_mass", &jet_mass_);
-    // tree_->Branch("jet_energy", &jet_energy_);
+    tree_->Branch("jet_mass", &jet_mass_);
+    tree_->Branch("jet_energy", &jet_energy_);
     // tree_->Branch("jet_px", &jet_px_);
     // tree_->Branch("jet_py", &jet_py_);
     // tree_->Branch("jet_pz", &jet_pz_);
 
     tree_->Branch("jet_bjetscore", &jet_bjetscore_);
     tree_->Branch("jet_tauscore", &jet_tauscore_);
+    tree_->Branch("jet_eletkiso", &jet_eletkiso_);
+    tree_->Branch("jet_elepfiso", &jet_elepfiso_);
+    tree_->Branch("jet_elepuppiiso", &jet_elepuppiiso_);
+    tree_->Branch("jet_muoniso", &jet_muoniso_);
     tree_->Branch("jet_taupt", &jet_taupt_);
-    // tree_->Branch("jet_tauscoreHW", &jet_tauscoreHW_);
     
-
     tree_->Branch("jet_reject", &jet_reject_);
     tree_->Branch("jet_tauflav", &jet_tauflav_);
     tree_->Branch("jet_muflav", &jet_muflav_);
@@ -376,11 +412,9 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     tree_->Branch("jet_lepflav", &jet_lepflav_);
     tree_->Branch("jet_taucharge", &jet_taucharge_);
 
-
     tree_->Branch("jet_genmatch_lep_pt", &jet_genmatch_lep_pt_);
     tree_->Branch("jet_genmatch_lep_vis_pt", &jet_genmatch_lep_vis_pt_);
-
-
+    tree_->Branch("jet_genmatch_lep_dR", &jet_genmatch_lep_dR_);
 
     tree_->Branch("jet_genmatch_pt", &jet_genmatch_pt_);
     tree_->Branch("jet_genmatch_eta", &jet_genmatch_eta_);
@@ -388,6 +422,8 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     tree_->Branch("jet_genmatch_mass", &jet_genmatch_mass_);
     tree_->Branch("jet_genmatch_dR", &jet_genmatch_dR_);
     tree_->Branch("jet_taumatch_dR", &jet_taumatch_dR_);
+    tree_->Branch("jet_elematch_dR", &jet_elematch_dR_);
+    tree_->Branch("jet_muonmatch_dR", &jet_muonmatch_dR_);
     tree_->Branch("jet_genmatch_hflav", &jet_genmatch_hflav_);
     tree_->Branch("jet_genmatch_pflav", &jet_genmatch_pflav_);
 
@@ -397,17 +433,21 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     tree_->Branch("jet_npfcand", &njet_pfcand_);
     tree_->Branch("jet_pfcand_isfilled", &jet_pfcand_isfilled, njet_pfcand_);
     tree_->Branch("jet_pfcand_pt", &jet_pfcand_pt, njet_pfcand_);
+    tree_->Branch("jet_pfcand_pt_phys", &jet_pfcand_pt_phys, njet_pfcand_);
     tree_->Branch("jet_pfcand_pt_rel", &jet_pfcand_pt_rel, njet_pfcand_);
+    tree_->Branch("jet_pfcand_pt_rel_phys", &jet_pfcand_pt_rel_phys, njet_pfcand_);
     // tree_->Branch("jet_pfcand_px", &jet_pfcand_px, njet_pfcand_);
     // tree_->Branch("jet_pfcand_py", &jet_pfcand_py, njet_pfcand_);
     // tree_->Branch("jet_pfcand_pz", &jet_pfcand_pz, njet_pfcand_);
     tree_->Branch("jet_pfcand_pt_log", &jet_pfcand_pt_log, njet_pfcand_);
     tree_->Branch("jet_pfcand_pt_rel_log", &jet_pfcand_pt_rel_log, njet_pfcand_);
     tree_->Branch("jet_pfcand_eta", &jet_pfcand_eta, njet_pfcand_);
+    tree_->Branch("jet_pfcand_eta_phys", &jet_pfcand_eta_phys, njet_pfcand_);
     tree_->Branch("jet_pfcand_phi", &jet_pfcand_phi, njet_pfcand_);
-    // tree_->Branch("jet_pfcand_mass", &jet_pfcand_mass, njet_pfcand_);
-    // tree_->Branch("jet_pfcand_energy", &jet_pfcand_energy, njet_pfcand_);
-    // tree_->Branch("jet_pfcand_energy_log", &jet_pfcand_energy_log, njet_pfcand_);
+    tree_->Branch("jet_pfcand_phi_phys", &jet_pfcand_phi_phys, njet_pfcand_);
+    tree_->Branch("jet_pfcand_mass", &jet_pfcand_mass, njet_pfcand_);
+    tree_->Branch("jet_pfcand_energy", &jet_pfcand_energy, njet_pfcand_);
+    tree_->Branch("jet_pfcand_energy_log", &jet_pfcand_energy_log, njet_pfcand_);
     tree_->Branch("jet_pfcand_puppiweight", &jet_pfcand_puppiweight, njet_pfcand_);
     tree_->Branch("jet_pfcand_emid", &jet_pfcand_emid, njet_pfcand_);
     tree_->Branch("jet_pfcand_quality", &jet_pfcand_quality, njet_pfcand_);
@@ -416,11 +456,25 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     tree_->Branch("jet_pfcand_dxy", &jet_pfcand_dxy, njet_pfcand_);
     tree_->Branch("jet_pfcand_dxy_custom", &jet_pfcand_dxy_custom, njet_pfcand_);
     tree_->Branch("jet_pfcand_id", &jet_pfcand_id, njet_pfcand_);
+    tree_->Branch("jet_pfcand_isPhoton", &jet_pfcand_isPhoton, njet_pfcand_);
+    tree_->Branch("jet_pfcand_isElectron", &jet_pfcand_isElectron, njet_pfcand_);
+    tree_->Branch("jet_pfcand_isElectronPlus", &jet_pfcand_isElectronPlus, njet_pfcand_);
+    tree_->Branch("jet_pfcand_isElectronMinus", &jet_pfcand_isElectronMinus, njet_pfcand_);
+    tree_->Branch("jet_pfcand_isMuon", &jet_pfcand_isMuon, njet_pfcand_);
+    tree_->Branch("jet_pfcand_isMuonPlus", &jet_pfcand_isMuonPlus, njet_pfcand_);
+    tree_->Branch("jet_pfcand_isMuonMinus", &jet_pfcand_isMuonMinus, njet_pfcand_);
+    tree_->Branch("jet_pfcand_isNeutralHadron", &jet_pfcand_isNeutralHadron, njet_pfcand_);
+    tree_->Branch("jet_pfcand_isChargedHadron", &jet_pfcand_isChargedHadron, njet_pfcand_);
+    tree_->Branch("jet_pfcand_isChargedHadronPlus", &jet_pfcand_isChargedHadronPlus, njet_pfcand_);
+    tree_->Branch("jet_pfcand_isChargedHadronMinus", &jet_pfcand_isChargedHadronMinus, njet_pfcand_);
+
     tree_->Branch("jet_pfcand_charge", &jet_pfcand_charge, njet_pfcand_);
     tree_->Branch("jet_pfcand_pperp_ratio", &jet_pfcand_pperp_ratio, njet_pfcand_);
     tree_->Branch("jet_pfcand_ppara_ratio", &jet_pfcand_ppara_ratio, njet_pfcand_);
     tree_->Branch("jet_pfcand_deta", &jet_pfcand_deta, njet_pfcand_);
+    tree_->Branch("jet_pfcand_deta_phys", &jet_pfcand_deta_phys, njet_pfcand_);
     tree_->Branch("jet_pfcand_dphi", &jet_pfcand_dphi, njet_pfcand_);
+    tree_->Branch("jet_pfcand_dphi_phys", &jet_pfcand_dphi_phys, njet_pfcand_);
     tree_->Branch("jet_pfcand_etarel", &jet_pfcand_etarel, njet_pfcand_);
 
     tree_->Branch("jet_pfcand_track_valid", &jet_pfcand_track_valid, njet_pfcand_);
@@ -497,6 +551,8 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     edm::Handle<std::vector<l1t::PFJet>> scjets;
     edm::Handle<std::vector<l1t::PFJet>> scjetsCorr;
     edm::Handle<std::vector<l1t::PFTau>> nntaus;
+    edm::Handle<std::vector<l1t::TkElectron>> electrons;
+    edm::Handle<std::vector<l1t::SAMuon>> muons;
 
     edm::Handle<reco::JetFlavourInfoMatchingCollection> genJetsFlavour;
     
@@ -517,6 +573,8 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     iEvent.getByToken(scjets_, scjets);
     iEvent.getByToken(scjetsCorr_, scjetsCorr);
     iEvent.getByToken(nntaus_, nntaus);
+    iEvent.getByToken(electrons_, electrons);
+    iEvent.getByToken(muons_, muons);
 
     float vz = 0.;
     double ptsum = 0;
@@ -532,7 +590,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     edm::Handle<edm::ValueMap<float>> bjetIDhandle;
     iEvent.getByToken(bjetids_, bjetIDhandle);
 
-
+    // gen jets
     std::vector<reco::GenJetRef> jetv_gen;  
     if(genjets.isValid()){
         for (auto jets_iter = genjets->begin(); jets_iter != genjets->end(); ++jets_iter) {                                                                                                   
@@ -542,6 +600,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         sort(jetv_gen.begin(), jetv_gen.end(), genJetRefSorter);
     }
 
+    // reco jets
     std::vector<l1t::PFJetRef> jetv_l1;
     for (auto jets_iter = scjets->begin(); jets_iter != scjets->end(); ++jets_iter) {                                                                                                   
         l1t::PFJetRef jref(scjets, jets_iter - scjets->begin());                                                                                                                
@@ -552,6 +611,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
     sort(jetv_l1.begin(), jetv_l1.end(), jetRefSorter);
 
+    // reco jets, with jec
     std::vector<l1t::PFJetRef> jetv_l1_corr;
     for (auto jets_iter_corr = scjetsCorr->begin(); jets_iter_corr != scjetsCorr->end(); ++jets_iter_corr) {                                                                                                   
         l1t::PFJetRef jrefcorr(scjetsCorr, jets_iter_corr - scjetsCorr->begin());              
@@ -559,16 +619,35 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
     sort(jetv_l1_corr.begin(), jetv_l1_corr.end(), jetRefSorter);
 
+    // reco taus
     std::vector<l1t::PFTauRef> tauv_l1;
     for (auto tau_iter = nntaus->begin(); tau_iter != nntaus->end(); ++tau_iter) {                                                                                                   
         l1t::PFTauRef tref(nntaus, tau_iter - nntaus->begin());                                                                                                                             
-        if (tref->pt() < 10.) continue;            
+        if (tref->pt() < 5.) continue;            
         tauv_l1.push_back(tref);                                                                                                                                                              
     }
     sort(tauv_l1.begin(), tauv_l1.end(), tauRefSorter);
 
+    // reco electron
+    std::vector<l1t::TkElectronRef> elev_l1;
+    for (auto ele_iter = electrons->begin(); ele_iter != electrons->end(); ++ele_iter) {                                                                                                   
+        l1t::TkElectronRef eref(electrons, ele_iter - electrons->begin());                                                                                                                             
+        if (eref->pt() < 5.) continue;            
+        elev_l1.push_back(eref);                                                                                                                                                              
+    }
+    sort(elev_l1.begin(), elev_l1.end(), eleRefSorter);
+
+    // reco muons
+    std::vector<l1t::SAMuonRef> muonv_l1;
+    for (auto muon_iter = muons->begin(); muon_iter != muons->end(); ++muon_iter) {                                                                                                   
+        l1t::SAMuonRef mref(muons, muon_iter - muons->begin());                                                                                                                             
+        if (mref->pt() < 5.) continue;            
+        muonv_l1.push_back(mref);                                                                                                                                                              
+    }
+    sort(muonv_l1.begin(), muonv_l1.end(), muonRefSorter);
 
 
+    // loop over reco jets
     for (size_t i = 0; i < jetv_l1.size(); i++) {
         
         // get hardware value jet
@@ -583,9 +662,9 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         // jet_pt_ = jetv_l1[i]->pt();
         // jet_eta_ = jetv_l1[i]->eta();
         // jet_phi_ = jetv_l1[i]->phi();
-        // jet_mass_ = jetv_l1[i]->mass();
+        jet_mass_ = jetv_l1[i]->mass();
         jet_pt_raw_ = jetv_l1[i]->rawPt();
-        // jet_energy_ = jetv_l1[i]->energy();
+        jet_energy_ = jetv_l1[i]->energy();
         // jet_px_ = jetv_l1[i]->px();
         // jet_py_ = jetv_l1[i]->py();
         // jet_pz_ = jetv_l1[i]->pz();
@@ -671,7 +750,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             }
         }
 
-
+        // some basic selection crityeria
         jet_reject_  = false;
         // exclude, when a jet is matched with a lepton, those for which the matched lepton is below the chosen pt threshold
         // Jet id applied only to jets not overlapping with gen-leptons
@@ -688,7 +767,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             jet_reject_ = true;
         } 
 
-
+        // flavor info
         if(pos_matched_genmu >= 0){
             jet_muflav_  = 1;
         }
@@ -715,10 +794,9 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         }
 
         jet_lepflav_ = nlep_in_cone;
-
         jet_genmatch_lep_pt_ = genLepton4V.Pt();
         jet_genmatch_lep_vis_pt_ = genLeptonVis4V.Pt();
-
+        jet_genmatch_lep_dR_ = minDR;
 
         // match to TAUS
         int   pos_matched_tau = -1;
@@ -742,7 +820,45 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             // jet_tauscoreHW_ = -1.;
         }
 
-        // match to jec jets
+        // match to ELECTRONS
+        int   pos_matched_ele = -1;
+        float minDR_ele = 0.4;
+        for(size_t iele = 0; iele < elev_l1.size(); iele++){
+            if(reco::deltaR(elev_l1[iele]->p4(),jetv_l1[i]->p4()) < minDR_ele){
+                pos_matched_ele = iele;
+                minDR_ele = reco::deltaR(elev_l1[iele]->p4(), jetv_l1[i]->p4());
+            }
+        }
+        if (pos_matched_ele > -1){
+            jet_elematch_dR_ = minDR_ele;
+            jet_eletkiso_ = elev_l1[pos_matched_ele]->trkIsol();
+            jet_elepfiso_ = elev_l1[pos_matched_ele]->pfIsol();
+            jet_elepuppiiso_ = elev_l1[pos_matched_ele]->puppiIsol();
+        }else{
+            jet_elematch_dR_ = 999.;
+            jet_eletkiso_ = -1.;
+            jet_elepfiso_ = -1.;
+            jet_elepuppiiso_ = -1.;
+        }
+
+        // match to MUONS
+        int   pos_matched_muon = -1;
+        float minDR_muon = 0.4;
+        for(size_t imuon = 0; imuon < muonv_l1.size(); imuon++){
+            if(reco::deltaR(muonv_l1[imuon]->p4(),jetv_l1[i]->p4()) < minDR_muon){
+                pos_matched_muon = imuon;
+                minDR_muon = reco::deltaR(muonv_l1[imuon]->p4(), jetv_l1[i]->p4());
+            }
+        }
+        if (pos_matched_muon > -1){
+            jet_muonmatch_dR_ = minDR_muon;
+            jet_muoniso_ = muonv_l1[pos_matched_muon]->hwIso();
+        }else{
+            jet_muonmatch_dR_ = 999.;
+            jet_muoniso_ = -1.;
+        }
+
+        // match to jec corrected jets
         int   pos_matched_jec = -1;
         float minDR_jec = 0.4;
         for(size_t ijec = 0; ijec < jetv_l1_corr.size(); ijec++){
@@ -759,7 +875,6 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             jet_pt_corr_ = -1.;
         }
         
-
         // pf candidates
         std::vector<l1t::PFCandidate> vectorOfConstituents;
         for(unsigned ipart = 0; ipart < jetv_l1[i]->numberOfDaughters(); ipart++){
@@ -780,6 +895,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         jet_pfcand_pt.clear();
         jet_pfcand_pt_phys.clear();
         jet_pfcand_pt_rel.clear();
+        jet_pfcand_pt_rel_phys.clear();
         jet_pfcand_isfilled.clear();
         // jet_pfcand_px.clear();
         // jet_pfcand_py.clear();
@@ -790,9 +906,9 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         jet_pfcand_eta_phys.clear();
         jet_pfcand_phi.clear();
         jet_pfcand_phi_phys.clear();
-        // jet_pfcand_mass.clear();
-        // jet_pfcand_energy.clear();
-        // jet_pfcand_energy_log.clear();
+        jet_pfcand_mass.clear();
+        jet_pfcand_energy.clear();
+        jet_pfcand_energy_log.clear();
         jet_pfcand_puppiweight.clear();
         jet_pfcand_emid.clear();
         jet_pfcand_quality.clear();
@@ -801,11 +917,25 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         jet_pfcand_dxy.clear();
         jet_pfcand_dxy_custom.clear();
         jet_pfcand_id.clear();
+        jet_pfcand_isPhoton.clear();
+        jet_pfcand_isElectron.clear();
+        jet_pfcand_isElectronPlus.clear();
+        jet_pfcand_isElectronMinus.clear();
+        jet_pfcand_isMuon.clear();
+        jet_pfcand_isMuonPlus.clear();
+        jet_pfcand_isMuonMinus.clear();
+        jet_pfcand_isNeutralHadron.clear();
+        jet_pfcand_isChargedHadron.clear();
+        jet_pfcand_isChargedHadronPlus.clear();
+        jet_pfcand_isChargedHadronMinus.clear();
+
         jet_pfcand_charge.clear();
         jet_pfcand_pperp_ratio.clear();
         jet_pfcand_ppara_ratio.clear();
         jet_pfcand_deta.clear();
+        jet_pfcand_deta_phys.clear();
         jet_pfcand_dphi.clear();
+        jet_pfcand_dphi_phys.clear();
         jet_pfcand_etarel.clear();
 
         jet_pfcand_track_valid.clear();
@@ -853,7 +983,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             // jet_pfcand_pt.push_back(pfcand.pt());
             jet_pfcand_pt.push_back(float(pfcand.hwPt()));
             jet_pfcand_pt_phys.push_back(pfcand.pt());
-            // jet_pfcand_pt_rel.push_back(pfcand.pt()/jetv_l1[i]->pt());
+            jet_pfcand_pt_rel_phys.push_back(pfcand.pt()/jetv_l1[i]->pt());
             jet_pfcand_pt_rel.push_back(float(pfcand.hwPt())/jet_pt_);
             jet_pfcand_isfilled.push_back(1);
             // jet_pfcand_px.push_back(pfcand.px());
@@ -869,9 +999,26 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             // jet_pfcand_phi.push_back(pfcand.phi());
             jet_pfcand_phi.push_back(float(pfcand.hwPhi()));
             jet_pfcand_phi_phys.push_back(pfcand.phi());
+
+            float massCand = 0.13f;
+            if (abs(pfcand.charge())) {
+                if ((pfcand.id() == l1t::PFCandidate::Muon)) {
+                    // type = l1t::PFCandidate::Muon;
+                    massCand = 0.105;
+                } else if ((pfcand.id() == l1t::PFCandidate::Electron)) {
+                    // type = l1t::PFCandidate::Electron;
+                    massCand = 0.005;
+                } //else
+                    // type = l1t::PFCandidate::ChargedHadron;
+            } else {
+            // type = pfcand.hwId.isPhoton() ? l1t::PFCandidate::Photon : l1t::PFCandidate::NeutralHadron;
+                massCand = pfcand.id() == l1t::PFCandidate::Photon ? 0.0 : 0.5;
+            }
+
             // jet_pfcand_mass.push_back(pfcand.mass());
-            // jet_pfcand_energy.push_back(pfcand.energy());
-            // jet_pfcand_energy_log.push_back(std::log(pfcand.energy()));
+            jet_pfcand_mass.push_back(massCand);
+            jet_pfcand_energy.push_back(pfcand.energy());
+            jet_pfcand_energy_log.push_back(std::log(pfcand.energy()));
             // jet_pfcand_puppiweight.push_back(pfcand.puppiWeight());
             jet_pfcand_puppiweight.push_back(float(pfcand.hwPuppiWeight()));
 
@@ -879,6 +1026,21 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             jet_pfcand_quality.push_back(float(pfcand.hwTkQuality()));
             
             jet_pfcand_id.push_back(abs(pfcand.pdgId()));
+            // std::cout<<pfcand.hwQual()<<" "<<pfcand.id()<<" "<<pfcand.pdgId()<<" "<<pfcand.charge()<<std::endl;
+            jet_pfcand_isPhoton.push_back(pfcand.id() == l1t::PFCandidate::Photon);
+            jet_pfcand_isElectron.push_back(pfcand.id() == l1t::PFCandidate::Electron);
+            jet_pfcand_isElectronPlus.push_back((pfcand.id() == l1t::PFCandidate::Electron) && (pfcand.charge() > 0.));
+            jet_pfcand_isElectronMinus.push_back((pfcand.id() == l1t::PFCandidate::Electron) && (pfcand.charge() < 0.));
+            jet_pfcand_isMuon.push_back(pfcand.id() == l1t::PFCandidate::Muon);
+            jet_pfcand_isMuonPlus.push_back((pfcand.id() == l1t::PFCandidate::Muon) && (pfcand.charge() > 0.));
+            jet_pfcand_isMuonMinus.push_back((pfcand.id() == l1t::PFCandidate::Muon) && (pfcand.charge() < 0.));
+            jet_pfcand_isNeutralHadron.push_back(pfcand.id() == l1t::PFCandidate::NeutralHadron);
+            jet_pfcand_isChargedHadron.push_back(pfcand.id() == l1t::PFCandidate::ChargedHadron);
+            jet_pfcand_isChargedHadronPlus.push_back((pfcand.id() == l1t::PFCandidate::ChargedHadron) && (pfcand.charge() > 0.));
+            jet_pfcand_isChargedHadronMinus.push_back((pfcand.id() == l1t::PFCandidate::ChargedHadron) && (pfcand.charge() < 0.));
+            // int sumID = jet_pfcand_isPhoton.at(ipfcand)+jet_pfcand_isElectronPlus.at(ipfcand)+jet_pfcand_isElectronMinus.at(ipfcand)+jet_pfcand_isMuonMinus.at(ipfcand)+jet_pfcand_isMuonPlus.at(ipfcand)+jet_pfcand_isNeutralHadron.at(ipfcand)+jet_pfcand_isChargedHadronMinus.at(ipfcand)+jet_pfcand_isChargedHadronPlus.at(ipfcand);
+            // std::cout<<sumID<<std::endl;
+
             jet_pfcand_charge.push_back(pfcand.charge());
             
             // jet_pfcand_z0.push_back(pfcand.z0());
@@ -895,7 +1057,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             jet_pfcand_pperp_ratio.push_back(jet_direction.Perp(pfcand_momentum)/pfcand_momentum.Mag());
             jet_pfcand_ppara_ratio.push_back(jet_direction.Dot(pfcand_momentum)/pfcand_momentum.Mag());
 
-            // jet_pfcand_dphi.push_back(jet_direction.DeltaPhi(pfcand_momentum));
+            jet_pfcand_dphi_phys.push_back(jet_direction.DeltaPhi(pfcand_momentum));
             // jet_pfcand_dphi.push_back(deltaPhi(float(pfcand.hwPhi()), jet_phi_));
             // https://github.com/cms-sw/cmssw/blob/master/L1Trigger/Phase2L1ParticleFlow/src/jetmet/L1SeedConePFJetEmulator.cc#L11
 
@@ -906,7 +1068,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             L1SCJetEmu::detaphi_t dphiw = dphi > L1SCJetEmu::detaphi_t(0) ? dphi0 : dphi1;
             jet_pfcand_dphi.push_back(float(dphiw));
 
-            // jet_pfcand_deta.push_back(jet_direction.Eta()-pfcand_momentum.Eta());
+            jet_pfcand_deta_phys.push_back(jet_direction.Eta()-pfcand_momentum.Eta());
             jet_pfcand_deta.push_back(jet_eta_-float(pfcand.hwEta()));
             // jet_pfcand_etarel.push_back(etaRel(jetDir,pfcand.momentum()));
             jet_pfcand_etarel.push_back(etaRel(jetDir,pfcand.momentum()));
@@ -995,12 +1157,6 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
             }
         }
-
-
-
-
-
-
 
         tree_->Fill();
     }

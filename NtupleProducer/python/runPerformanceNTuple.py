@@ -142,6 +142,10 @@ process.jetntuple = cms.EDAnalyzer("JetNTuplizer",
     vtx = cms.InputTag("l1tVertexFinderEmulator","L1VerticesEmulation"),
     bjetIDs = cms.InputTag("l1tBJetProducerPuppiCorrectedEmulator", "L1PFBJets"),
     # bjetIDs = cms.InputTag("l1tBJetProducerPuppiEmulator", "L1PFBJets"),
+
+    electrons = cms.InputTag("l1tLayer2EG","L1CtTkElectron"),
+    # muons = cms.InputTag("l1tLayer1","Puppi"),
+    muons = cms.InputTag("l1tSAMuonsGmt","promptSAMuons"),
 )
 
 process.extraPFStuff.add(process.l1tPFTracksFromL1Tracks)
@@ -780,8 +784,7 @@ def saveGenCands():
     process.p += process.gencandTable
 
 if False:
-    # process.source.fileNames  = [ 'file:/afs/cern.ch/work/s/sewuchte/private/L1T/CMSSW_14_0_0_pre1/src/FastPUPPI/inputs131X.root'] 
-    process.source.fileNames  = [ 'file:/eos/cms/store/cmst3/group/l1tr/sewuchte/l1teg/fpinputs/131Xv9a/VBFHToTauTau_M-125_TuneCP5_14TeV-powheg-pythia8/VBFHtt_PU200_131Xv9a/240419_101643/0000/inputs131X_98.root'] 
+    process.source.fileNames  = [ 'file:/eos/cms/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_950.root'] 
     # process.source.fileNames  = [
     #     '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1.root',
     #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_2.root',
