@@ -381,7 +381,7 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     tree_ = fs->make<TTree>("Jets","Jets");
     // tree_->Branch("run",  &run_,  "run/i");
     // tree_->Branch("lumi", &lumi_, "lumi/i");
-    // tree_->Branch("event", &event_, "event/l");
+    tree_->Branch("event", &event_, "event/l");
 
     tree_->Branch("jet_eta", &jet_eta_);
     tree_->Branch("jet_eta_phys", &jet_eta_phys_);
