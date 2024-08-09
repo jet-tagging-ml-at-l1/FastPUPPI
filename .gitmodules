@@ -1,0 +1,3 @@
+[submodule "submission"]
+	path = submission
+	url = git@github.com:CMS-L1T-Jet-Tagging/submission.git
