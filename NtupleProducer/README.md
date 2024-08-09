@@ -20,7 +20,7 @@ git cms-addpkg L1Trigger/Phase2L1ParticleFlow
 git cms-addpkg L1Trigger/TrackTrigger
 git cms-addpkg SimTracker/TrackTriggerAssociation
 git cms-addpkg L1Trigger/Phase2L1ParticleFlow
-git cms-checkout-topic -u cms-l1t-offline:phase2-l1t-1400pre3_v5
+git cms-checkout-topic -u cms-l1t-offline:phase2-l1t-1400pre3_v9
 
 # scripts
 git clone git@github.com:p2l1pfp/FastPUPPI.git -b 14_0_X
