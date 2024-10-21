@@ -65,6 +65,7 @@
 #include "DataFormats/JetMatching/interface/JetFlavourInfoMatching.h"
 #include "DataFormats/L1TParticleFlow/interface/PFCandidate.h"
 #include "L1Trigger/Phase2L1ParticleFlow/interface/BJetId.h"
+#include "L1Trigger/Phase2L1ParticleFlow/interface/MultiJetId.h"
 #include "DataFormats/L1Trigger/interface/VertexWord.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
@@ -167,6 +168,7 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
         edm::EDGetTokenT<reco::JetFlavourInfoMatchingCollection> genJetsFlavour_;
         edm::EDGetTokenT<std::vector<l1t::VertexWord>> const fVtxEmu_;
         edm::EDGetTokenT<edm::ValueMap<float>> const bjetids_;
+        edm::EDGetTokenT<edm::ValueMap<std::vector<float>>> const multijetids_;
         // const edm::InputTag pileupInfoTag_;
         TTree *tree_;
         uint32_t run_, lumi_; uint64_t event_;
@@ -250,6 +252,17 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     // float jet_pz_;
 
     float jet_bjetscore_;
+
+    float jet_multijetscore1_;
+    float jet_multijetscore2_;
+    float jet_multijetscore3_;
+    float jet_multijetscore4_;
+    float jet_multijetscore5_;
+    float jet_multijetscore6_;
+    float jet_multijetscore7_;
+    float jet_multijetscore8_;
+    float jet_multijetscoreRegression_;
+
     float jet_tauscore_;
     float jet_eletkiso_;
     float jet_elepfiso_;
@@ -374,7 +387,8 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     muons_(consumes<std::vector<l1t::SAMuon>>(iConfig.getParameter<edm::InputTag>("muons"))), 
     genJetsFlavour_   (consumes<reco::JetFlavourInfoMatchingCollection >    (iConfig.getParameter<edm::InputTag>("genJetsFlavour"))),
     fVtxEmu_(consumes<std::vector<l1t::VertexWord>>(iConfig.getParameter<edm::InputTag>("vtx"))),
-    bjetids_(consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("bjetIDs")))
+    bjetids_(consumes<edm::ValueMap<float>>(iConfig.getParameter<edm::InputTag>("bjetIDs"))),
+    multijetids_(consumes<edm::ValueMap<std::vector<float>>>(iConfig.getParameter<edm::InputTag>("multijetIDs")))
 {
     usesResource("TFileService");
     edm::Service<TFileService> fs;
@@ -397,6 +411,15 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     // tree_->Branch("jet_pz", &jet_pz_);
 
     tree_->Branch("jet_bjetscore", &jet_bjetscore_);
+    tree_->Branch("jet_multijetscore_b", &jet_multijetscore1_);
+    tree_->Branch("jet_multijetscore_uds", &jet_multijetscore2_);
+    tree_->Branch("jet_multijetscore_g", &jet_multijetscore3_);
+    tree_->Branch("jet_multijetscore_c", &jet_multijetscore4_);
+    tree_->Branch("jet_multijetscore_taup", &jet_multijetscore5_);
+    tree_->Branch("jet_multijetscore_taum", &jet_multijetscore6_);
+    tree_->Branch("jet_multijetscore_muon", &jet_multijetscore7_);
+    tree_->Branch("jet_multijetscore_electron", &jet_multijetscore8_);
+    tree_->Branch("jet_multijetscore_regression", &jet_multijetscoreRegression_);
     tree_->Branch("jet_tauscore", &jet_tauscore_);
     tree_->Branch("jet_eletkiso", &jet_eletkiso_);
     tree_->Branch("jet_elepfiso", &jet_elepfiso_);
@@ -590,6 +613,9 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     edm::Handle<edm::ValueMap<float>> bjetIDhandle;
     iEvent.getByToken(bjetids_, bjetIDhandle);
 
+    edm::Handle<edm::ValueMap<std::vector<float>>> multijetIDhandle;
+    iEvent.getByToken(multijetids_, multijetIDhandle);
+
     // gen jets
     std::vector<reco::GenJetRef> jetv_gen;  
     if(genjets.isValid()){
@@ -670,6 +696,17 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         // jet_pz_ = jetv_l1[i]->pz();
 
         jet_bjetscore_ = (*bjetIDhandle)[jetv_l1[i]];
+        std::vector<float> jetscores = (*multijetIDhandle)[jetv_l1[i]];
+        jet_multijetscore1_ = jetscores[0];
+        jet_multijetscore2_ = jetscores[1];
+        jet_multijetscore3_ = jetscores[2];
+        jet_multijetscore4_ = jetscores[3];
+        jet_multijetscore5_ = jetscores[4];
+        jet_multijetscore6_ = jetscores[5];
+        jet_multijetscore7_ = jetscores[6];
+        jet_multijetscore8_ = jetscores[7];
+        jet_multijetscoreRegression_ = jetscores[8];
+        
 
         // match to GEN
         int   pos_matched = -1;
