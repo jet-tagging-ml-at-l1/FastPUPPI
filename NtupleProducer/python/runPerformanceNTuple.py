@@ -8,11 +8,11 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load("SimGeneral.HepPDTESSource.pythiapdt_cfi")
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(False), allowUnscheduled = cms.untracked.bool(False) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10))
 process.MessageLogger.cerr.FwkReport.reportEvery = 1
 
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('file:inputs131X_1.root'),
+    fileNames = cms.untracked.vstring('file:/eos/cms/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/VBFHtt_PU200/inputs131X_1.root'),
     inputCommands = cms.untracked.vstring("keep *", 
             "drop l1tPFClusters_*_*_*",
             "drop l1tPFTracks_*_*_*",
@@ -141,6 +141,7 @@ process.jetntuple = cms.EDAnalyzer("JetNTuplizer",
     genJetsFlavour = cms.InputTag("genFlavourInfo"),
     vtx = cms.InputTag("l1tVertexFinderEmulator","L1VerticesEmulation"),
     bjetIDs = cms.InputTag("l1tBJetProducerPuppiCorrectedEmulator", "L1PFBJets"),
+    multijetIDs = cms.InputTag("l1tMultiJetProducerPuppiCorrectedEmulator", "L1PFMultiJets"),
     # bjetIDs = cms.InputTag("l1tBJetProducerPuppiEmulator", "L1PFBJets"),
 
     electrons = cms.InputTag("l1tLayer2EG","L1CtTkElectron"),
@@ -191,6 +192,7 @@ process.endTuple = cms.EndPath(process.jetntuple)
 process.p.associate(process.extraPFStuff)
 process.p.associate(process.L1TPFJetsExtendedTask)
 process.p.associate(process.L1TBJetsTask)
+process.p.associate(process.L1TMultiJetsTask)
 process.TFileService = cms.Service("TFileService", fileName = cms.string("jetTuple.root"))
 
 # for full debug:
@@ -297,6 +299,14 @@ def addBtagging(): #extended TRK
     process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSC4PFL1PuppiExtendedEmulator")
     process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
     process.extraPFStuff.add(process.L1TBJetsTask)
+    #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')  
+
+def addMultitagging(): #extended TRK
+    process.load("L1Trigger.Phase2L1ParticleFlow.L1MultiJetProducer_cff")
+    process.l1tMultiJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSC4PFL1PuppiExtendedEmulator")
+    process.l1tMultiJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
+    process.l1tMultiJetProducerPuppiCorrectedEmulator.MultiJetPath = cms.string("/builds/cebrown/TrainTagger/CMSSW_14_0_0_pre3/src/MultiJetTaggerBaseline/MultiJetBaseline")
+    process.extraPFStuff.add(process.L1TMultiJetsTask)
     #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
 
 def addTaus():
@@ -372,8 +382,7 @@ def addTkPtCut(ptCut):
     monitorPerf("L1PFTkPt3", "l1tLayer1TkPt3:PF")
     monitorPerf("L1PuppiTkPt3", "l1tLayer1TkPt3:Puppi")
 
-
-def addGen(pdgs):
+def addGenLep(pdgs=[11,13,22]):
     genLepTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
                 src = cms.InputTag("genParticles"),
                 doc = cms.string("gen leptons"),
@@ -419,21 +428,6 @@ def addGen(pdgs):
                         name = process.genPhTable.name
             )
             process.extraPFStuff.add(process.genPhTable, process.genPhExtTable)
-        elif pdgId == 211:
-            process.genPiTable = genLepTable.clone(
-                        cut  = cms.string("abs(pdgId) == %d && status == 1 && pt > 2" % pdgId),
-                        name = cms.string("GenPi"))
-            process.genPiExtTable = genLepTableExt.clone(
-                        cut = process.genPiTable.cut,
-                        name = process.genPiTable.name
-            )
-            process.extraPFStuff.add(process.genPiTable, process.genPiExtTable)
-
-def addGenPi(pdgs=[211]):
-    addGen(pdgs)
-
-def addGenLep(pdgs=[11,13,22]):
-    addGen(pdgs)
 
 
 def addStaMu():
@@ -799,8 +793,8 @@ def saveGenCands():
                                       )
     process.p += process.gencandTable
 
-if False:
-    process.source.fileNames  = [ 'file:/eos/cms/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_950.root'] 
+if True:
+    process.source.fileNames  = [ 'file:/eos/cms/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_*.root'] 
     # process.source.fileNames  = [
     #     '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1.root',
     #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_2.root',
@@ -830,6 +824,7 @@ if False:
     addAllLeps()
     # addSeededConeJets()
     addBtagging()  
+    addMultitagging()  
     addTaus()  
     addJetConstituents(30)
     addGenJetFlavourTable()
