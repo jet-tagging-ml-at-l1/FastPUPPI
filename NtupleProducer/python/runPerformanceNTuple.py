@@ -8,7 +8,7 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load("SimGeneral.HepPDTESSource.pythiapdt_cfi")
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(False), allowUnscheduled = cms.untracked.bool(False) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1))
 process.MessageLogger.cerr.FwkReport.reportEvery = 1
 
 process.source = cms.Source("PoolSource",
@@ -305,7 +305,7 @@ def addMultitagging(): #extended TRK
     process.load("L1Trigger.Phase2L1ParticleFlow.L1MultiJetProducer_cff")
     process.l1tMultiJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSC4PFL1PuppiExtendedEmulator")
     process.l1tMultiJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
-    process.l1tMultiJetProducerPuppiCorrectedEmulator.MultiJetPath = cms.string("/builds/cebrown/TrainTagger/CMSSW_14_0_0_pre3/src/MultiJetTaggerBaseline/MultiJetBaseline")
+    process.l1tMultiJetProducerPuppiCorrectedEmulator.MultiJetPath = cms.string("/builds/cebrown/TrainTagger/CMSSW_14_0_0_pre3/src/MultiJetTaggerMinimal/MultiJetMinimal_test")
     process.extraPFStuff.add(process.L1TMultiJetsTask)
     #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
 
@@ -842,3 +842,4 @@ if True:
         getattr(process, 'l1tLayer1'+R).pfAlgoParameters.debug = True
 
 # open("debugDumpJetNTuple.py", "w").write(process.dumpPython())
+process.source.fileNames = ["file:inputs131X_1.root"]
