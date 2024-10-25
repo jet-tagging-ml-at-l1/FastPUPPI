@@ -324,7 +324,7 @@ def addPhase1Jets():
     process.l1pfmetTable.mets.scPuppiCorrMHT = cms.InputTag("l1tSC4PFL1PuppiCorrectedEmulatorMHT")
 
 def addCaloJets():
-    process.extraPFStuff.add(process.l1tTowerCalibration, process.l1tCaloJet )
+    process.extraPFStuff.add(process.l1tTowerCalibration, process.l1tCaloJet)
     process.l1pfjetTable.jets.RefCaloJets = cms.InputTag("l1tCaloJet","L1CaloJetCollectionBXV")
 
 def addTkJets():
