@@ -17,7 +17,8 @@ process.source = cms.Source("PoolSource",
             "drop l1tPFClusters_*_*_*",
             "drop l1tPFTracks_*_*_*",
             "drop l1tPFCandidates_*_*_*",
-            "drop l1tTkPrimaryVertexs_*_*_*")
+            "drop l1tTkPrimaryVertexs_*_*_*",
+            "drop l1tKMTFTracks_*_*_*")
 )
 
 process.load('Configuration.Geometry.GeometryExtended2026D95Reco_cff')
