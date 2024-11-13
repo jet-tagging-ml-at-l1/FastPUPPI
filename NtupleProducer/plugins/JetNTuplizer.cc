@@ -412,9 +412,9 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
 
     tree_->Branch("jet_bjetscore", &jet_bjetscore_);
     tree_->Branch("jet_multijetscore_b", &jet_multijetscore_b_);
-    tree_->Branch("jet_multijetscore_uds", &jet_multijetscore_bkg_);
-    tree_->Branch("jet_multijetscore_g", &jet_multijetscore_gluon_);
-    tree_->Branch("jet_multijetscore_c", &jet_multijetscore_charm_);
+    tree_->Branch("jet_multijetscore_bkg", &jet_multijetscore_bkg_);
+    tree_->Branch("jet_multijetscore_gluon", &jet_multijetscore_gluon_);
+    tree_->Branch("jet_multijetscore_charm", &jet_multijetscore_charm_);
     tree_->Branch("jet_multijetscore_taup", &jet_multijetscore_taup_);
     tree_->Branch("jet_multijetscore_taum", &jet_multijetscore_taum_);
     tree_->Branch("jet_multijetscore_muon", &jet_multijetscore_muon_);
