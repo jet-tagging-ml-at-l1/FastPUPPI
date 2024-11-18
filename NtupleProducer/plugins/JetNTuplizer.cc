@@ -175,17 +175,17 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
         // float dRJetGenMatch_ = 0.2;
         float dRJetGenMatch_ = 0.4;
         bool  isMC_;
-        float jetPtMin_ = 10;
-        float jetEtaMin_ = -2.4;
-        float jetEtaMax_ = 2.4;
+        float jetPtMin_ = 5;
+        float jetEtaMin_ = -999;
+        float jetEtaMax_ = 999.;
         float jetPFCandidatePtMin_ = 0.;
 
         static constexpr size_t max_pfcand_ = 16;
         bool applyJetIDFlag = false;
         /// thresholds for matching
         float dRCone        = 0.2;
-        float ptGenLeptonMin = 8;
-        float ptGenTauVisibleMin = 15;
+        float ptGenLeptonMin = 5;
+        float ptGenTauVisibleMin = 5;
 
 
 
@@ -301,7 +301,10 @@ class JetNTuplizer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::
     std::vector<float> jet_pfcand_quality;
     std::vector<float> jet_pfcand_tkquality;
     std::vector<float> jet_pfcand_z0;
+    std::vector<float> jet_pfcand_z0_phys;
     std::vector<float> jet_pfcand_dxy;
+    std::vector<float> jet_pfcand_dxy_phys;
+    std::vector<float> jet_pfcand_dxy_physSquared;
     std::vector<float> jet_pfcand_dxy_custom;
     std::vector<unsigned int> jet_pfcand_id;
     std::vector<bool> jet_pfcand_isPhoton;
@@ -379,9 +382,9 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     usesResource("TFileService");
     edm::Service<TFileService> fs;
     tree_ = fs->make<TTree>("Jets","Jets");
-    // tree_->Branch("run",  &run_,  "run/i");
-    // tree_->Branch("lumi", &lumi_, "lumi/i");
-    // tree_->Branch("event", &event_, "event/l");
+    tree_->Branch("run",  &run_,  "run/i");
+    tree_->Branch("lumi", &lumi_, "lumi/i");
+    tree_->Branch("event", &event_, "event/l");
 
     tree_->Branch("jet_eta", &jet_eta_);
     tree_->Branch("jet_eta_phys", &jet_eta_phys_);
@@ -453,7 +456,10 @@ JetNTuplizer::JetNTuplizer(const edm::ParameterSet& iConfig) :
     tree_->Branch("jet_pfcand_quality", &jet_pfcand_quality, njet_pfcand_);
     tree_->Branch("jet_pfcand_tkquality", &jet_pfcand_tkquality, njet_pfcand_);
     tree_->Branch("jet_pfcand_z0", &jet_pfcand_z0, njet_pfcand_);
+    tree_->Branch("jet_pfcand_z0_phys", &jet_pfcand_z0_phys, njet_pfcand_);
     tree_->Branch("jet_pfcand_dxy", &jet_pfcand_dxy, njet_pfcand_);
+    tree_->Branch("jet_pfcand_dxy_phys", &jet_pfcand_dxy_phys, njet_pfcand_);
+    tree_->Branch("jet_pfcand_dxy_physSquared", &jet_pfcand_dxy_physSquared, njet_pfcand_);
     tree_->Branch("jet_pfcand_dxy_custom", &jet_pfcand_dxy_custom, njet_pfcand_);
     tree_->Branch("jet_pfcand_id", &jet_pfcand_id, njet_pfcand_);
     tree_->Branch("jet_pfcand_isPhoton", &jet_pfcand_isPhoton, njet_pfcand_);
@@ -914,7 +920,10 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         jet_pfcand_quality.clear();
         jet_pfcand_tkquality.clear();
         jet_pfcand_z0.clear();
+        jet_pfcand_z0_phys.clear();
         jet_pfcand_dxy.clear();
+        jet_pfcand_dxy_phys.clear();
+        jet_pfcand_dxy_physSquared.clear();
         jet_pfcand_dxy_custom.clear();
         jet_pfcand_id.clear();
         jet_pfcand_isPhoton.clear();
@@ -1043,9 +1052,14 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
             jet_pfcand_charge.push_back(pfcand.charge());
             
-            // jet_pfcand_z0.push_back(pfcand.z0());
+            jet_pfcand_z0_phys.push_back(pfcand.z0());
             jet_pfcand_z0.push_back(float(pfcand.hwZ0()));
-            // jet_pfcand_dxy.push_back(pfcand.dxy());
+            jet_pfcand_dxy_phys.push_back(pfcand.dxy());
+            jet_pfcand_dxy_physSquared.push_back(pfcand.dxy()*pfcand.dxy());
+            // std::cout<<"Jet Ntuplizer z0: "<<pfcand.z0()<<std::endl;
+            // std::cout<<"Jet Ntuplizer hw z0: "<<pfcand.hwZ0()<<std::endl;
+            // std::cout<<"Jet Ntuplizer dxy: "<<pfcand.dxy()<<std::endl;
+            // std::cout<<"Jet Ntuplizer hw dxy: "<<pfcand.hwDxy()<<std::endl;
             jet_pfcand_dxy.push_back(float(pfcand.hwDxy()));
 
             jet_pfcand_tkquality.push_back(float(pfcand.hwTkQuality()));
@@ -1060,7 +1074,7 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
             jet_pfcand_dphi_phys.push_back(jet_direction.DeltaPhi(pfcand_momentum));
             // jet_pfcand_dphi.push_back(deltaPhi(float(pfcand.hwPhi()), jet_phi_));
             // https://github.com/cms-sw/cmssw/blob/master/L1Trigger/Phase2L1ParticleFlow/src/jetmet/L1SeedConePFJetEmulator.cc#L11
-
+            
             L1SCJetEmu::detaphi_t dphi(pfcand.hwPhi() - jet_phi_);
             // phi wrap
             L1SCJetEmu::detaphi_t dphi0 = dphi > L1SCJetEmu::detaphi_t(l1ct::Scales::INTPHI_PI) ? L1SCJetEmu::detaphi_t(l1ct::Scales::INTPHI_TWOPI - dphi) : L1SCJetEmu::detaphi_t(dphi);
@@ -1103,7 +1117,12 @@ JetNTuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
                 jet_pfcand_track_vy.push_back(track->vy());
                 jet_pfcand_track_vz.push_back(track->vz()-vz);
                 jet_pfcand_track_pterror.push_back(track->trkPtError());
-                jet_pfcand_dxy_custom.push_back(-track->vx() * sin(track->phi()) + track->vy() * cos(track->phi()));  
+                jet_pfcand_dxy_custom.push_back(-track->vx() * sin(track->phi()) + track->vy() * cos(track->phi()));
+                // std::cout<<"Jet Ntuplizer track z0: "<<(trackWord.getZ0())<<std::endl;  
+                // std::cout<<"Jet Ntuplizer track d0: "<<(trackWord.getD0())<<std::endl;  
+                // std::cout<<"Jet Ntuplizer track d0 sqrt: "<<std::sqrt(std::abs(trackWord.getD0()))<<std::endl;  
+                // std::cout<<"Jet Ntuplizer custom: "<<(-track->vx() * sin(track->phi()) + track->vy() * cos(track->phi()))<<std::endl;  
+                // std::cout<<"Jet Ntuplizer custom sqrt: "<<std::sqrt(std::abs(-track->vx() * sin(track->phi()) + track->vy() * cos(track->phi())))<<std::endl;  
             }else{
 
                 jet_pfcand_track_isfilled.push_back(0);

@@ -23,7 +23,7 @@ git cms-addpkg L1Trigger/Phase2L1ParticleFlow
 git cms-checkout-topic -u cms-l1t-offline:phase2-l1t-1400pre3_v5
 
 # scripts
-git clone git@github.com:p2l1pfp/FastPUPPI.git -b 14_0_X
+git clone https://github.com/CMS-L1T-Jet-Tagging/FastPUPPI.git -b dev/14_0_X-leptons
 
 scram b -j8
 ```
@@ -43,6 +43,7 @@ The supported input campaings are:
  * `11_0_X` from the HLT TDR campaign (Phase2C9, Geometry D49, HGCal v11).
 
 Existing input files available are:
+ * `140X_v9`: input files from processing `14_0_X` Phase2Spring23 samples in `CMSSW_14_0_0_pre3` + `cms-l1t-offline:phase2-l1t-1400pre3_v9a`, from `/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/`
  * `131X_v3`: input files from processing `13_1_X` Phase2Spring23 samples in `CMSSW_14_0_0_pre3` + `cms-l1t-offline:phase2-l1t-1400pre3_v4`, from `/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v3`
  * `131X_v2`: input files from processing `13_1_X` Phase2Spring23 samples in `CMSSW_14_0_X`, from `/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2`
  * `125X_v0`:  input files from processing `12_5_X` Phase2Fall22 TDR samples in `CMSSW_12_5_3`, from `/store/cmst3/group/l1tr/gpetrucc/12_5_X/NewInputs125X/150223`

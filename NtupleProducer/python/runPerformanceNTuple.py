@@ -129,11 +129,11 @@ process.jetntuple = cms.EDAnalyzer("JetNTuplizer",
     genJets = cms.InputTag("ak4GenJetsNoNu"),
     genParticles = cms.InputTag("genParticles"),
 
-    # baseline TRK
+    # baselineTRK
     # scPuppiJets = cms.InputTag("l1tSC4PFL1PuppiEmulator"),
     # scPuppiJetsCorr = cms.InputTag("l1tSC4PFL1PuppiCorrectedEmulator"),
 
-    # extended TRK
+    # extendedTRK
     scPuppiJets = cms.InputTag("l1tSC4PFL1PuppiExtendedEmulator"),
     scPuppiJetsCorr = cms.InputTag("l1tSC4PFL1PuppiExtendedCorrectedEmulator"),
 
@@ -285,19 +285,35 @@ def addSeededConeJets():
     process.l1pfjetTable.jets.scPuppiExtended = cms.InputTag('l1tSC4PFL1PuppiExtendedEmulator')
     process.l1pfjetTable.jets.scPuppiExtendedCorr = cms.InputTag('l1tSC4PFL1PuppiExtendedCorrectedEmulator')
 
-# def addBtagging(): #baselineTRK
+# def addBtagging(): #baselineTRK default (4 param)
 #     process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
 #     process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSC4PFL1PuppiEmulator")
 #     process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
 #     process.extraPFStuff.add(process.L1TBJetsTask)
 #     #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
 
-def addBtagging(): #extended TRK
+# def addBtagging(): #baselineTRK 5 param
+#     process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
+#     process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSC4PFL1PuppiEmulator")
+#     process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
+#     process.extraPFStuff.add(process.L1TBJetsTask)
+#     process.l1tPFTracksFromL1Tracks.nParam = cms.uint32(5)
+#     #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
+
+def addBtagging(): #extended TRK default (5 param)
     process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
     process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSC4PFL1PuppiExtendedEmulator")
     process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
     process.extraPFStuff.add(process.L1TBJetsTask)
     #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
+
+# def addBtagging(): #extended TRK 4 param
+#     process.load("L1Trigger.Phase2L1ParticleFlow.L1BJetProducer_cff")
+#     process.l1tBJetProducerPuppiCorrectedEmulator.jets = cms.InputTag("l1tSC4PFL1PuppiExtendedEmulator")
+#     process.l1tBJetProducerPuppiCorrectedEmulator.maxJets = cms.int32(500)
+#     process.extraPFStuff.add(process.L1TBJetsTask)
+#     process.l1tPFTracksFromL1TracksExtended.nParam = cms.uint32(4)
+#     #process.l1pfjetTable.jets.scPuppiBJet = cms.InputTag('l1tBJetProducerPuppiCorrectedEmulator')    
 
 def addTaus():
     process.load("L1Trigger.Phase2L1ParticleFlow.L1NNTauProducer_cff")
@@ -784,30 +800,22 @@ def saveGenCands():
     process.p += process.gencandTable
 
 if False:
-    process.source.fileNames  = [ 'file:/eos/cms/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_950.root'] 
-    # process.source.fileNames  = [
-    #     '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_1.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_2.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_3.root',
-    #     # # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_4.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_5.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_6.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_7.root',
-    #     # # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_8.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_9.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_10.root',
-    #     # # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_11.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_12.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_13.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_14.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_15.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_16.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_17.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_18.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_19.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_20.root',
-    #     # '/store/cmst3/group/l1tr/cerminar/14_0_X/fpinputs_131X/v2/TTbar_PU200/inputs131X_21.root',
-    # ] 
+    process.source.fileNames  = [
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_1.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_2.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_3.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_4.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_5.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_6.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_7.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_8.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_9.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_10.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_11.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_12.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_13.root',
+        '/store/cmst3/group/l1tr/FastPUPPI/14_0_X/fpinputs_131X/v9a/TT2L_PU200/inputs131X_14.root',
+    ] 
     goMT(4)
     
     addAllJets()
@@ -818,6 +826,7 @@ if False:
     addJetConstituents(30)
     addGenJetFlavourTable()
     # saveCands() # not needed for jet studies per se, but saves all L1 PF & PUPPI candidates
+    # process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1))
 
 
     if False:
